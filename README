@@ -33,9 +33,9 @@
 >  ## call cooleytukey_outofplace_inverse_mpi
 479a480,486
 >  OK MPI_TEST DONE!
->  MPI STOP            4
 >  MPI STOP            1
 >  MPI STOP            2
->  MPI STOP            3
+>  MPI STOP            4
 >  MPI STOP            5
+>  MPI STOP            3
 >  MPI STOP            6

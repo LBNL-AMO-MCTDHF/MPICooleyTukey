@@ -361,7 +361,7 @@ subroutine myzfft1d_slowindex_mpi(in,out,localnumprocs,ctrank,proclist,totsize)
   do ii=1,localnumprocs
      fouriermatrix(:,ii)=twiddle(:)**(ii-1)
   enddo
-  call simple_circ(in,out,fouriermatrix,totsize,ctrank,localnumprocs,proclist)
+  call simple_summa(in,out,fouriermatrix,totsize,ctrank,localnumprocs,proclist)
 
 end subroutine myzfft1d_slowindex_mpi
 

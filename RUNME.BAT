@@ -9,6 +9,8 @@ echo "RUNNING FT_TEST"
 
 echo "MAKING README"
 
+rm -f README
+
 cp README.H README
 
 diff ft_test.out mpi_test.out >> README
