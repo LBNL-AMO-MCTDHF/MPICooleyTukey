@@ -394,9 +394,9 @@ subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,proclist)
   complex*16 :: work2(howmany),work(howmany)
   integer :: ibox,jbox,deltabox,nnn,CT_GROUP_LOCAL,CT_COMM_LOCAL,ierr,procshift(localnumprocs)
 
-!!TEMP
-  if (localnumprocs.ne.nprocs.or.myrank.ne.ctrank) then
-     write(mpifileptr,*) "simple_Circ not done",localnumprocs,nprocs,myrank,ctrank; call mpistop()
+!! NOT TEMP
+  if (localnumprocs.gt.nprocs.or.localnumprocs.le.1.or.ctrank.lt.1.or.ctrank.gt.localnumprocs) then
+     write(mpifileptr,*) "local error", ctrank,localnumprocs,nprocs; call mpistop()
   endif
 
   procshift(:)=proclist(:)-1
@@ -454,9 +454,9 @@ subroutine simple_summa(in, out,mat,howmany,ctrank,localnumprocs,proclist)
   complex*16 :: work(howmany)
   integer :: ibox,nnn,CT_GROUP_LOCAL,CT_COMM_LOCAL,ierr,procshift(localnumprocs)
 
-!!TEMP
-  if (localnumprocs.ne.nprocs.or.myrank.ne.ctrank) then
-     write(mpifileptr,*) "simple_summa not done",localnumprocs,nprocs,myrank,ctrank; call mpistop()
+!! NOT TEMP
+  if (localnumprocs.gt.nprocs.or.localnumprocs.le.1.or.ctrank.lt.1.or.ctrank.gt.localnumprocs) then
+     write(mpifileptr,*) "local error", ctrank,localnumprocs,nprocs; call mpistop()
   endif
 
   procshift(:)=proclist(:)-1
@@ -483,13 +483,13 @@ subroutine simple_summa(in, out,mat,howmany,ctrank,localnumprocs,proclist)
   ierr=798
   call mpi_comm_free(CT_COMM_LOCAL,ierr)
   if (ierr.ne.0) then
-     write(mpifileptr,*) "Error comm destroy simple_circ",ierr; call mpistop()
+     write(mpifileptr,*) "Error comm destroy simple_summa",ierr; call mpistop()
   endif
 
   ierr=798
   call mpi_group_free(CT_GROUP_LOCAL,ierr)
   if (ierr.ne.0) then
-     write(mpifileptr,*) "Error group destroy simple_circ",ierr; call mpistop()
+     write(mpifileptr,*) "Error group destroy simple_summa",ierr; call mpistop()
   endif
 
 end subroutine simple_summa
