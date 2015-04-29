@@ -267,24 +267,6 @@ subroutine twiddlemult_mpi(in,out,dim1,numfactored,factorlist,localnumprocs,ctra
 end subroutine twiddlemult_mpi
 
 
-subroutine checkdivisible(number,factor)
-  use fileptrmod
-  implicit none
-  integer,intent(in) :: number,factor
-  if ((number/factor)*factor.ne.number) then
-     write(mpifileptr,*) "Divisibility failure", number,factor; call mpistop()
-  endif
-end subroutine checkdivisible
-
-
-subroutine checkbetween(number,greaterthan,lessthan)
-  use fileptrmod
-  implicit none
-  integer,intent(in) :: number,greaterthan,lessthan
-  if (number.le.greaterthan.or.number.ge.lessthan) then
-     write(mpifileptr,*) "Error checkbetween",greaterthan,number,lessthan; call mpistop()
-  endif
-end subroutine checkbetween
 
 
 !! fourier transform with OUT-OF-PLACE OUTPUT. 
@@ -298,8 +280,12 @@ recursive subroutine cooleytukey_outofplace_mpi(in,outtrans,dim1,pf,proclist,loc
   complex*16 ::  tempout(dim1,howmany),  outtemp(dim1,howmany)
   integer :: depth, newrank, dim2, newpf(MAXFACTORS),newproclist(localnprocs/pf(1)),ctrank,ctset(pf(1))
 
-  call checkdivisible(localnprocs,pf(1))
-  call checkbetween(localrank,0,localnprocs+1)
+  if ((localnprocs/pf(1))*pf(1).ne.localnprocs) then
+     write(mpifileptr,*) "Divisibility error outofplace ",localnprocs,pf(1); call mpistop()
+  endif
+  if (localrank.lt.1.or.localrank.gt.localnprocs) then
+     write(mpifileptr,*) "Rank error outofplace ",localrank,localnprocs; call mpistop()
+  endif
 
   depth=localnprocs/pf(1)
   ctrank=(localrank-1)/depth+1
@@ -333,8 +319,12 @@ recursive subroutine cooleytukey_outofplaceinput_mpi(intranspose,out,dim1,pf,pro
   complex*16 ::   temptrans(dim1,howmany),outtrans(dim1,howmany)
   integer :: depth, newrank, newpf(MAXFACTORS),newproclist(localnprocs/pf(1)),ctrank,ctset(pf(1))
 
-  call checkdivisible(localnprocs,pf(1))
-  call checkbetween(localrank,0,localnprocs+1)
+  if ((localnprocs/pf(1))*pf(1).ne.localnprocs) then
+     write(mpifileptr,*) "Divisibility error outofplace ",localnprocs,pf(1); call mpistop()
+  endif
+  if (localrank.lt.1.or.localrank.gt.localnprocs) then
+     write(mpifileptr,*) "Rank error outofplace ",localrank,localnprocs; call mpistop()
+  endif
 
   depth=localnprocs/pf(1)
   ctrank=(localrank-1)/depth+1
@@ -377,7 +367,7 @@ subroutine myzfft1d_slowindex_mpi(in,out,localnumprocs,ctrank,proclist,totsize)
      fouriermatrix(:,ii)=twiddle(:)**(ii-1)
   enddo
 
-  call simple_circ(in,out,fouriermatrix,totsize,ctrank,localnumprocs,proclist)
+  call simple_summa(in,out,fouriermatrix,totsize,ctrank,localnumprocs,proclist)
 
 end subroutine myzfft1d_slowindex_mpi
 
