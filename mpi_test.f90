@@ -62,13 +62,13 @@ subroutine mpi_core(myrank,nprocs,mpifileptr)
   enddo
 
   write(mpifileptr,*) "## call cooleytukey_outofplace_mpi"
-  call cooleytukey_outofplace_mpi(input1(:,myrank),zoutput1(:,myrank),size1,primefactors,proclist,nprocs,1)
+  call cooleytukey_outofplace_mpi(input1(:,myrank),zoutput1(:,myrank),size1,primefactors,proclist,nprocs,myrank,1)
 
   call mympigather(zoutput1(:,myrank),zoutput1,size1)
 
 
   write(mpifileptr,*) "## call cooleytukey_outofplace_inverse_mpi"
-  call cooleytukey_outofplace_inverse_mpi(zoutput1(:,myrank),input1(:,myrank),size1,primefactors,proclist,nprocs,1)
+  call cooleytukey_outofplace_inverse_mpi(zoutput1(:,myrank),input1(:,myrank),size1,primefactors,proclist,nprocs,myrank,1)
 
   call mympigather(input1(:,myrank),input0,size1)
 

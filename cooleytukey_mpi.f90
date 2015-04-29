@@ -195,17 +195,22 @@
 !!$   limitations under the License.
 
 
+module fileptrmod
+  implicit none
+  integer :: mpifileptr = 6
+end module fileptrmod
+
 module ct_mpimod
   implicit none
   integer :: myrank = -1
   integer :: nprocs = -1
-  integer :: mpifileptr = 6
   integer :: CT_COMM_WORLD = -1
   integer :: CT_GROUP_WORLD = -1
 end module ct_mpimod
 
 
 subroutine ctset()
+  use fileptrmod
   use ct_mpimod
   implicit none
   call getmyranknprocs(myrank,nprocs)
@@ -222,15 +227,15 @@ end subroutine ctset
 
 !! INVERSE OF cooleytukey_outofplace_mpi
 
-subroutine cooleytukey_outofplace_inverse_mpi(intranspose,out,dim1,pf,proclist,localnprocs,howmany)
+subroutine cooleytukey_outofplace_inverse_mpi(intranspose,out,dim1,pf,proclist,localnprocs,localrank,howmany)
   implicit none
-  integer, intent(in) :: dim1,localnprocs,howmany,pf(MAXFACTORS),proclist(localnprocs/pf(1),pf(1))
+  integer, intent(in) :: dim1,localnprocs,localrank,howmany,pf(MAXFACTORS),proclist(localnprocs)
   complex*16, intent(in) :: intranspose(dim1,howmany)
   complex*16, intent(out) :: out(dim1,howmany)
   complex*16 ::  intransconjg(dim1,howmany),  outconjg(dim1,howmany)
 
   intransconjg(:,:)=CONJG(intranspose(:,:))
-  call cooleytukey_outofplaceinput_mpi(intransconjg,outconjg,dim1,pf,proclist,localnprocs,howmany)
+  call cooleytukey_outofplaceinput_mpi(intransconjg,outconjg,dim1,pf,proclist,localnprocs,localrank,howmany)
   out(:,:)=CONJG(outconjg(:,:))/dim1/localnprocs
 
 end subroutine cooleytukey_outofplace_inverse_mpi
@@ -238,6 +243,7 @@ end subroutine cooleytukey_outofplace_inverse_mpi
 
 
 subroutine twiddlemult_mpi(in,out,dim1,numfactored,factorlist,localnumprocs,ctrank,howmany)
+  use fileptrmod
   use ct_mpimod  !!TEMP
   implicit none
   integer, intent(in) :: dim1,howmany,localnumprocs,numfactored,ctrank,factorlist(numfactored)
@@ -261,23 +267,8 @@ subroutine twiddlemult_mpi(in,out,dim1,numfactored,factorlist,localnumprocs,ctra
 end subroutine twiddlemult_mpi
 
 
-subroutine getctrank(allproclist,depth,localnumprocs,outrank,outproclist)
-  use ct_mpimod !!TEMP?
-  implicit none
-  integer, intent(in) :: depth,allproclist(depth,localnumprocs),localnumprocs
-  integer, intent(out) :: outrank,outproclist(localnumprocs)
-
-  if (depth.ne.1.or.localnumprocs.ne.nprocs) then
-     write(mpifileptr,*) "NOT DONE GETCTRANK",depth,localnumprocs,nprocs; call mpistop()
-  endif
-  outrank=myrank
-  outproclist(:)=allproclist(1,:)
-
-end subroutine getctrank
-
-
 subroutine checkdivisible(number,factor)
-  use ct_mpimod
+  use fileptrmod
   implicit none
   integer,intent(in) :: number,factor
   if ((number/factor)*factor.ne.number) then
@@ -286,55 +277,82 @@ subroutine checkdivisible(number,factor)
 end subroutine checkdivisible
 
 
+subroutine checkbetween(number,greaterthan,lessthan)
+  use fileptrmod
+  implicit none
+  integer,intent(in) :: number,greaterthan,lessthan
+  if (number.le.greaterthan.or.number.ge.lessthan) then
+     write(mpifileptr,*) "Error checkbetween",greaterthan,number,lessthan; call mpistop()
+  endif
+end subroutine checkbetween
+
+
 !! fourier transform with OUT-OF-PLACE OUTPUT. 
 
-recursive subroutine cooleytukey_outofplace_mpi(in,outtrans,dim1,pf,proclist,localnprocs,howmany)
+recursive subroutine cooleytukey_outofplace_mpi(in,outtrans,dim1,pf,proclist,localnprocs,localrank,howmany)
+  use fileptrmod
   implicit none
-  integer, intent(in) :: dim1,localnprocs,howmany,pf(MAXFACTORS),proclist(localnprocs/pf(1),pf(1))
+  integer, intent(in) :: dim1,localnprocs,localrank,howmany,pf(MAXFACTORS),proclist(localnprocs/pf(1),pf(1))
   complex*16, intent(in) :: in(dim1,howmany)
   complex*16, intent(out) :: outtrans(dim1,howmany)
   complex*16 ::  tempout(dim1,howmany),  outtemp(dim1,howmany)
-  integer :: depth,dim2, newpf(MAXFACTORS),newproclist(localnprocs/pf(1)),ctrank,ctset(pf(1))
+  integer :: depth, newrank, dim2, newpf(MAXFACTORS),newproclist(localnprocs/pf(1)),ctrank,ctset(pf(1))
 
   call checkdivisible(localnprocs,pf(1))
+  call checkbetween(localrank,0,localnprocs+1)
 
   depth=localnprocs/pf(1)
-
-  call getctrank(proclist,depth,pf(1),ctrank,ctset)
+  ctrank=(localrank-1)/depth+1
+  newrank=mod(localrank-1,depth)+1
+  ctset(:)=proclist(newrank,:)
   newproclist=proclist(:,ctrank)
- 
+
+  if (proclist(newrank,ctrank).ne.localrank) then
+     write(mpifileptr,*) "RANK FAIL INVERSE",proclist(newrank,ctrank),localrank,newrank,depth,ctrank,pf(1); call mpistop()
+  endif
+
   call myzfft1d_slowindex_mpi(in,tempout,pf(1),ctrank,ctset,dim1*howmany)
   call twiddlemult_mpi(tempout,outtemp,dim1,depth,newproclist,pf(1),ctrank,howmany)
   if (depth.eq.1) then
      call myzfft1d(outtemp,outtrans,dim1,howmany)
   else
      newpf(1:MAXFACTORS-1)=pf(2:MAXFACTORS); newpf(MAXFACTORS)=1
-     call cooleytukey_outofplace_mpi(outtemp,outtrans,dim1,newpf,newproclist,depth,howmany)
+
+     call cooleytukey_outofplace_mpi(outtemp,outtrans,dim1,newpf,newproclist,depth,newrank,howmany)
   endif
 end subroutine cooleytukey_outofplace_mpi
 
 
 
-recursive subroutine cooleytukey_outofplaceinput_mpi(intranspose,out,dim1,pf,proclist,localnprocs,howmany)
+recursive subroutine cooleytukey_outofplaceinput_mpi(intranspose,out,dim1,pf,proclist,localnprocs,localrank,howmany)
+  use fileptrmod
   implicit none
-  integer, intent(in) :: dim1,localnprocs,howmany,pf(MAXFACTORS),proclist(localnprocs/pf(1),pf(1))
+  integer, intent(in) :: dim1,localnprocs,localrank,howmany,pf(MAXFACTORS),proclist(localnprocs/pf(1),pf(1))
   complex*16, intent(in) :: intranspose(dim1,howmany)
   complex*16, intent(out) :: out(dim1,howmany)
   complex*16 ::   temptrans(dim1,howmany),outtrans(dim1,howmany)
-  integer :: depth, newpf(MAXFACTORS),newproclist(localnprocs/pf(1)),ctrank,ctset(pf(1))
+  integer :: depth, newrank, newpf(MAXFACTORS),newproclist(localnprocs/pf(1)),ctrank,ctset(pf(1))
 
   call checkdivisible(localnprocs,pf(1))
+  call checkbetween(localrank,0,localnprocs+1)
 
-  depth = localnprocs/pf(1)
-
-  call getctrank(proclist,depth,pf(1),ctrank,ctset)
+  depth=localnprocs/pf(1)
+  ctrank=(localrank-1)/depth+1
+  newrank=mod(localrank-1,depth)+1
+  ctset(:)=proclist(newrank,:)
   newproclist=proclist(:,ctrank)
+
+
+  if (proclist(newrank,ctrank).ne.localrank) then
+     write(mpifileptr,*) "RANK FAIL INVERSE",proclist(newrank,ctrank),localrank,newrank,depth,ctrank,pf(1); call mpistop()
+  endif
+
 
   if (depth.eq.1) then
      call myzfft1d(intranspose,temptrans,dim1,howmany)
   else
      newpf(1:MAXFACTORS-1)=pf(2:MAXFACTORS); newpf(MAXFACTORS)=1
-     call cooleytukey_outofplaceinput_mpi(intranspose,temptrans,dim1,newpf,newproclist,depth,howmany)
+     call cooleytukey_outofplaceinput_mpi(intranspose,temptrans,dim1,newpf,newproclist,depth,newrank,howmany)
   endif
 
   call twiddlemult_mpi(temptrans,outtrans,dim1,depth,newproclist,pf(1),ctrank,howmany)
@@ -367,6 +385,7 @@ end subroutine myzfft1d_slowindex_mpi
 
 
 subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,proclist)
+  use fileptrmod
   use ct_mpimod
   implicit none
   integer, intent(in) :: howmany,ctrank,localnumprocs,proclist(localnumprocs)
@@ -375,6 +394,7 @@ subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,proclist)
   complex*16 :: work2(howmany),work(howmany)
   integer :: ibox,jbox,deltabox,nnn,CT_GROUP_LOCAL,CT_COMM_LOCAL,ierr,procshift(localnumprocs)
 
+!!TEMP
   if (localnumprocs.ne.nprocs.or.myrank.ne.ctrank) then
      write(mpifileptr,*) "simple_Circ not done",localnumprocs,nprocs,myrank,ctrank; call mpistop()
   endif
@@ -413,6 +433,7 @@ end subroutine simple_circ
 
 
 subroutine simple_summa(in, out,mat,howmany,ctrank,localnumprocs,proclist)
+  use fileptrmod
   use ct_mpimod
   implicit none
   integer, intent(in) :: howmany,ctrank,localnumprocs,proclist(localnumprocs)
@@ -421,6 +442,7 @@ subroutine simple_summa(in, out,mat,howmany,ctrank,localnumprocs,proclist)
   complex*16 :: work(howmany)
   integer :: ibox,nnn,CT_GROUP_LOCAL,CT_COMM_LOCAL,ierr,procshift(localnumprocs)
 
+!!TEMP
   if (localnumprocs.ne.nprocs.or.myrank.ne.ctrank) then
      write(mpifileptr,*) "simple_Circ not done",localnumprocs,nprocs,myrank,ctrank; call mpistop()
   endif
