@@ -1,7 +1,10 @@
 
 program ft_test
   implicit none
-  integer, parameter :: size1=13, size2=12
+!!$  integer, parameter :: size1=13, size2=12
+  integer, parameter :: size1=26, size2=6
+!!$  integer, parameter :: size1=52, size2=3
+
   integer, parameter :: size=size1*size2
   complex*16 :: input(size), output(size),zoutput1(size),&
        input1(size),output1(size)

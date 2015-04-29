@@ -89,12 +89,23 @@ subroutine mpistop()
   use mpimod
   implicit none
   integer :: ierr
+
+  if (mpifileptr.ne.6) then
+     close(mpifileptr)
+  endif
+
+!  ierr=798
+!  call mpi_abort(MPI_COMM_WORLD,798,ierr)
+!  if (ierr/=0) then
+!     write(*,*)  "MPI ABORT ERR ",ierr,myrank
+!  endif
+
   call mpi_finalize(ierr)
   if (ierr/=0) then
-     write(mpifileptr,*)  "MPI ERR 3"
+     write(*,*)  "MPI FINALIZE ERR ",ierr,myrank
   endif
-  write(mpifileptr,*) "MPI STOP!"
-  close(mpifileptr)
+  call sleep(2)
+  write(*,*) "MPI STOP ",myrank
   stop
 end subroutine mpistop
 

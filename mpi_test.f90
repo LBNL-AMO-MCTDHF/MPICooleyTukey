@@ -22,7 +22,9 @@ end program mpi_test
 subroutine mpi_core(myrank,nprocs,mpifileptr)
   implicit none
   integer, intent(in) :: myrank,nprocs,mpifileptr
-  integer, parameter :: size1=13
+!!  integer, parameter :: size1=13
+  integer, parameter :: size1=26
+!!  integer, parameter :: size1=52
   integer :: size
   complex*16 :: input(size1*nprocs), output(size1*nprocs),zoutput1(size1,nprocs),&
        input1(size1,nprocs),output1(size1,nprocs),input0(size1*nprocs)
@@ -43,10 +45,10 @@ subroutine mpi_core(myrank,nprocs,mpifileptr)
   input(:)=input(:)+realarray(:)**3 * (0d0,4d0) * randomamount
 
   write(mpifileptr,*) "Go mpi_test. Dimensions are ",size1,nprocs
-!!TEMP
-!!TEMP  call getallprimefactors(nprocs,numfactors,primefactors)
-!!TEMP
-  numfactors=1; primefactors(:)=1; primefactors(1)=nprocs
+
+!!TEMP    numfactors=1; primefactors(:)=1; primefactors(1)=nprocs
+
+call getallprimefactors(nprocs,numfactors,primefactors)
 
   write(mpifileptr,*) "     Prime factors of ",nprocs," are"
   write(mpifileptr,*) primefactors(1:numfactors)
@@ -65,7 +67,6 @@ subroutine mpi_core(myrank,nprocs,mpifileptr)
   call cooleytukey_outofplace_mpi(input1(:,myrank),zoutput1(:,myrank),size1,primefactors,proclist,nprocs,myrank,1)
 
   call mympigather(zoutput1(:,myrank),zoutput1,size1)
-
 
   write(mpifileptr,*) "## call cooleytukey_outofplace_inverse_mpi"
   call cooleytukey_outofplace_inverse_mpi(zoutput1(:,myrank),input1(:,myrank),size1,primefactors,proclist,nprocs,myrank,1)

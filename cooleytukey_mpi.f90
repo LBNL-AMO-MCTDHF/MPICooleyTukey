@@ -252,16 +252,6 @@ subroutine twiddlemult_mpi(in,out,dim1,numfactored,myfactor,factorlist,localnump
   complex*16 :: twiddle1(dim1,numfactored),tt1(dim1)
   integer :: ii
 
-!!TEMP
-  if (localnumprocs.ne.nprocs.or.numfactored.ne.1.or.ctrank.ne.myrank) then
-     write(mpifileptr,*) "ACK, twiddlemult_mpi not done",localnumprocs,nprocs,numfactored,&
-          ctrank,myrank; call mpistop()
-  endif
-
-!! NOT TEMP; PERMANENT
-  if (localnumprocs*numfactored.ne.nprocs) then
-     write(mpifileptr,*) "factored fail",localnumprocs,numfactored,nprocs; call mpistop()
-  endif
   if (myfactor.lt.0.or.myfactor.gt.numfactored) then
      write (mpifileptr,*) "bad factor",myfactor,numfactored; call mpistop()
   endif
@@ -269,13 +259,11 @@ subroutine twiddlemult_mpi(in,out,dim1,numfactored,myfactor,factorlist,localnump
   call gettwiddlesmall(twiddle1(:,:),dim1*numfactored,localnumprocs)
 
   tt1(:)=twiddle1(:,myfactor)**(ctrank-1)   !!! ???? CRUX 
-
   do ii=1,howmany
      out(:,ii) = in(:,ii) * tt1(:)
   enddo
 
 end subroutine twiddlemult_mpi
-
 
 
 
@@ -303,19 +291,20 @@ recursive subroutine cooleytukey_outofplace_mpi(in,outtrans,dim1,pf,proclist,loc
   ctset(:)=proclist(newrank,:)
   newproclist=proclist(:,ctrank)
 
-  if (proclist(newrank,ctrank).ne.localrank) then
-     write(mpifileptr,*) "RANK FAIL INVERSE",proclist(newrank,ctrank),localrank,newrank,depth,ctrank,pf(1); call mpistop()
+  if (mod(proclist(newrank,ctrank)-1,localnprocs)+1.ne.localrank) then
+     write(*,*) "RANK FAIL INVERSE",proclist(newrank,ctrank),localrank,newrank,depth,ctrank,pf(1); call mpistop()
   endif
 
   call myzfft1d_slowindex_mpi(in,tempout,pf(1),ctrank,ctset,dim1*howmany)
+
   call twiddlemult_mpi(tempout,outtemp,dim1,depth,newrank,newproclist,pf(1),ctrank,howmany)
   if (depth.eq.1) then
      call myzfft1d(outtemp,outtrans,dim1,howmany)
   else
      newpf(1:MAXFACTORS-1)=pf(2:MAXFACTORS); newpf(MAXFACTORS)=1
-
      call cooleytukey_outofplace_mpi(outtemp,outtrans,dim1,newpf,newproclist,depth,newrank,howmany)
   endif
+
 end subroutine cooleytukey_outofplace_mpi
 
 
@@ -330,10 +319,10 @@ recursive subroutine cooleytukey_outofplaceinput_mpi(intranspose,out,dim1,pf,pro
   integer :: depth, newrank, newpf(MAXFACTORS),newproclist(localnprocs/pf(1)),ctrank,ctset(pf(1))
 
   if ((localnprocs/pf(1))*pf(1).ne.localnprocs) then
-     write(mpifileptr,*) "Divisibility error outofplace ",localnprocs,pf(1); call mpistop()
+     write(mpifileptr,*) "Divisibility error outofplaceinput ",localnprocs,pf(1); call mpistop()
   endif
   if (localrank.lt.1.or.localrank.gt.localnprocs) then
-     write(mpifileptr,*) "Rank error outofplace ",localrank,localnprocs; call mpistop()
+     write(mpifileptr,*) "Rank error outofplaceinput ",localrank,localnprocs; call mpistop()
   endif
 
   depth=localnprocs/pf(1)
@@ -342,11 +331,9 @@ recursive subroutine cooleytukey_outofplaceinput_mpi(intranspose,out,dim1,pf,pro
   ctset(:)=proclist(newrank,:)
   newproclist=proclist(:,ctrank)
 
-
-  if (proclist(newrank,ctrank).ne.localrank) then
-     write(mpifileptr,*) "RANK FAIL INVERSE",proclist(newrank,ctrank),localrank,newrank,depth,ctrank,pf(1); call mpistop()
+  if (mod(proclist(newrank,ctrank)-1,localnprocs)+1.ne.localrank) then
+     write(*,*) "RANK FAIL INVERSE",proclist(newrank,ctrank),localrank,newrank,depth,ctrank,pf(1); call mpistop()
   endif
-
 
   if (depth.eq.1) then
      call myzfft1d(intranspose,temptrans,dim1,howmany)
@@ -362,7 +349,6 @@ end subroutine cooleytukey_outofplaceinput_mpi
 
 
 
-
 subroutine myzfft1d_slowindex_mpi(in,out,localnumprocs,ctrank,proclist,totsize)
   implicit none
   integer, intent(in) :: totsize,localnumprocs,ctrank,proclist(localnumprocs)
@@ -372,12 +358,10 @@ subroutine myzfft1d_slowindex_mpi(in,out,localnumprocs,ctrank,proclist,totsize)
   integer :: ii
 
   call gettwiddlesmall(twiddle,localnumprocs,1)
-
   do ii=1,localnumprocs
      fouriermatrix(:,ii)=twiddle(:)**(ii-1)
   enddo
-
-  call simple_summa(in,out,fouriermatrix,totsize,ctrank,localnumprocs,proclist)
+  call simple_circ(in,out,fouriermatrix,totsize,ctrank,localnumprocs,proclist)
 
 end subroutine myzfft1d_slowindex_mpi
 
@@ -394,7 +378,6 @@ subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,proclist)
   complex*16 :: work2(howmany),work(howmany)
   integer :: ibox,jbox,deltabox,nnn,CT_GROUP_LOCAL,CT_COMM_LOCAL,ierr,procshift(localnumprocs)
 
-!! NOT TEMP
   if (localnumprocs.gt.nprocs.or.localnumprocs.le.1.or.ctrank.lt.1.or.ctrank.gt.localnumprocs) then
      write(mpifileptr,*) "local error", ctrank,localnumprocs,nprocs; call mpistop()
   endif
@@ -413,7 +396,7 @@ subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,proclist)
 
   out(:)=0
 
-  do deltabox=0,nprocs-1
+  do deltabox=0,localnumprocs-1
 
      ibox=mod(localnumprocs+ctrank-1+deltabox,localnumprocs)+1
      jbox=mod(localnumprocs+ctrank-1-deltabox,localnumprocs)+1
@@ -454,7 +437,6 @@ subroutine simple_summa(in, out,mat,howmany,ctrank,localnumprocs,proclist)
   complex*16 :: work(howmany)
   integer :: ibox,nnn,CT_GROUP_LOCAL,CT_COMM_LOCAL,ierr,procshift(localnumprocs)
 
-!! NOT TEMP
   if (localnumprocs.gt.nprocs.or.localnumprocs.le.1.or.ctrank.lt.1.or.ctrank.gt.localnumprocs) then
      write(mpifileptr,*) "local error", ctrank,localnumprocs,nprocs; call mpistop()
   endif
