@@ -242,23 +242,33 @@ end subroutine cooleytukey_outofplace_inverse_mpi
 
 
 
-subroutine twiddlemult_mpi(in,out,dim1,numfactored,factorlist,localnumprocs,ctrank,howmany)
+subroutine twiddlemult_mpi(in,out,dim1,numfactored,myfactor,factorlist,localnumprocs,ctrank,howmany)
   use fileptrmod
-  use ct_mpimod  !!TEMP
+  use ct_mpimod   !! nprocs check
   implicit none
-  integer, intent(in) :: dim1,howmany,localnumprocs,numfactored,ctrank,factorlist(numfactored)
+  integer, intent(in) :: dim1,howmany,localnumprocs,numfactored,myfactor,ctrank,factorlist(numfactored)
   complex*16, intent(in) :: in(dim1,howmany)
   complex*16, intent(out) :: out(dim1,howmany)
   complex*16 :: twiddle1(dim1,numfactored),tt1(dim1)
   integer :: ii
 
+!!TEMP
   if (localnumprocs.ne.nprocs.or.numfactored.ne.1.or.ctrank.ne.myrank) then
      write(mpifileptr,*) "ACK, twiddlemult_mpi not done",localnumprocs,nprocs,numfactored,&
           ctrank,myrank; call mpistop()
   endif
+
+!! NOT TEMP; PERMANENT
+  if (localnumprocs*numfactored.ne.nprocs) then
+     write(mpifileptr,*) "factored fail",localnumprocs,numfactored,nprocs; call mpistop()
+  endif
+  if (myfactor.lt.0.or.myfactor.gt.numfactored) then
+     write (mpifileptr,*) "bad factor",myfactor,numfactored; call mpistop()
+  endif
+
   call gettwiddlesmall(twiddle1(:,:),dim1*numfactored,localnumprocs)
 
-  tt1(:)=twiddle1(:,1)**(ctrank-1)   !!! ???? crux
+  tt1(:)=twiddle1(:,myfactor)**(ctrank-1)   !!! ???? CRUX 
 
   do ii=1,howmany
      out(:,ii) = in(:,ii) * tt1(:)
@@ -298,7 +308,7 @@ recursive subroutine cooleytukey_outofplace_mpi(in,outtrans,dim1,pf,proclist,loc
   endif
 
   call myzfft1d_slowindex_mpi(in,tempout,pf(1),ctrank,ctset,dim1*howmany)
-  call twiddlemult_mpi(tempout,outtemp,dim1,depth,newproclist,pf(1),ctrank,howmany)
+  call twiddlemult_mpi(tempout,outtemp,dim1,depth,newrank,newproclist,pf(1),ctrank,howmany)
   if (depth.eq.1) then
      call myzfft1d(outtemp,outtrans,dim1,howmany)
   else
@@ -345,7 +355,7 @@ recursive subroutine cooleytukey_outofplaceinput_mpi(intranspose,out,dim1,pf,pro
      call cooleytukey_outofplaceinput_mpi(intranspose,temptrans,dim1,newpf,newproclist,depth,newrank,howmany)
   endif
 
-  call twiddlemult_mpi(temptrans,outtrans,dim1,depth,newproclist,pf(1),ctrank,howmany)
+  call twiddlemult_mpi(temptrans,outtrans,dim1,depth,newrank,newproclist,pf(1),ctrank,howmany)
   call myzfft1d_slowindex_mpi(outtrans,out,pf(1),ctrank,ctset,dim1*howmany)
 
 end subroutine cooleytukey_outofplaceinput_mpi
@@ -418,6 +428,18 @@ subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,proclist)
      endif
   enddo
 
+  ierr=798
+  call mpi_comm_free(CT_COMM_LOCAL,ierr)
+  if (ierr.ne.0) then
+     write(mpifileptr,*) "Error comm destroy simple_circ",ierr; call mpistop()
+  endif
+
+  ierr=798
+  call mpi_group_free(CT_GROUP_LOCAL,ierr)
+  if (ierr.ne.0) then
+     write(mpifileptr,*) "Error group destroy simple_circ",ierr; call mpistop()
+  endif
+
 end subroutine simple_circ
 
 
@@ -434,17 +456,17 @@ subroutine simple_summa(in, out,mat,howmany,ctrank,localnumprocs,proclist)
 
 !!TEMP
   if (localnumprocs.ne.nprocs.or.myrank.ne.ctrank) then
-     write(mpifileptr,*) "simple_Circ not done",localnumprocs,nprocs,myrank,ctrank; call mpistop()
+     write(mpifileptr,*) "simple_summa not done",localnumprocs,nprocs,myrank,ctrank; call mpistop()
   endif
 
   procshift(:)=proclist(:)-1
   call mpi_group_incl(CT_GROUP_WORLD,localnumprocs,procshift,CT_GROUP_LOCAL,ierr)
   if (ierr.ne.0) then
-     write(mpifileptr,*) "Error group incl simple_circ",ierr; call mpistop()
+     write(mpifileptr,*) "Error group incl simple_summa",ierr; call mpistop()
   endif
   call mpi_comm_create(CT_COMM_WORLD, CT_GROUP_LOCAL, CT_COMM_LOCAL,ierr)
   if (ierr.ne.0) then
-     write(mpifileptr,*) "Error comm create simple_circ",ierr; call mpistop()
+     write(mpifileptr,*) "Error comm create simple_summa",ierr; call mpistop()
   endif
 
   nnn=1
@@ -457,5 +479,17 @@ subroutine simple_summa(in, out,mat,howmany,ctrank,localnumprocs,proclist)
      call mympibcast(work(:),ibox,howmany,CT_COMM_LOCAL)
      out(:)=out(:)+work(:)*mat(ctrank,ibox)
   enddo
+
+  ierr=798
+  call mpi_comm_free(CT_COMM_LOCAL,ierr)
+  if (ierr.ne.0) then
+     write(mpifileptr,*) "Error comm destroy simple_circ",ierr; call mpistop()
+  endif
+
+  ierr=798
+  call mpi_group_free(CT_GROUP_LOCAL,ierr)
+  if (ierr.ne.0) then
+     write(mpifileptr,*) "Error group destroy simple_circ",ierr; call mpistop()
+  endif
 
 end subroutine simple_summa
