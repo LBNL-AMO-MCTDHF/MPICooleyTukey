@@ -1,0 +1,27 @@
+
+FFTFLAG = 
+
+AR=ar
+
+ARGO=arg.o
+
+CC = gcc
+FC = mpif90 -ffree-line-length-none -mtune=native   
+F90 = mpif90 -ffree-line-length-none -mtune=native  
+
+LIBRARIES = $(DFFTFILES) -framework Accelerate  
+
+LOADFLAGS = -I/usr/local/mpich/include
+
+MYINCLUDE=.
+
+DFFTCHECK=DFFTPACK/passb.o
+	
+FFLAGS = -O2 -x f95-cpp-input -Wall -ffast-math 
+
+FFLAGS = -O2 -x f95-cpp-input -Wall -Wno-unused -Wno-unused-dummy-argument -ffast-math -fbounds-check
+
+F77FLAGS = -O2  -ffast-math 
+
+
+
