@@ -1,6 +1,6 @@
- Go mpi_test. Dimensions are           26           6
-      Prime factors of            6  are
-           2           3
+ Go mpi_test. Dimensions are           13          12
+      Prime factors of           12  are
+           2           2           3
 
  ## call ft. randomamount is   1.0000000000000000E-002
  ## call cooleytukey_outofplace_mpi
@@ -479,8 +479,14 @@
 
  OK MPI_TEST DONE!
  MPI STOP            1
- MPI STOP            2
+ MPI STOP            3
  MPI STOP            4
  MPI STOP            5
- MPI STOP            3
+ MPI STOP            8
+ MPI STOP            9
+ MPI STOP           10
+ MPI STOP           11
+ MPI STOP           12
+ MPI STOP            2
  MPI STOP            6
+ MPI STOP            7
