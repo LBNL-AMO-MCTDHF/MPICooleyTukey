@@ -1,6 +1,6 @@
- Go ft_test. Dimensions are           35          12
-      Prime factors of           12  are
-           2           2           3
+ Go ft_test. Dimensions are            7          60
+      Prime factors of           60  are
+           2           2           3           5
  
  ## call ft. randomamount is  1.000000000000000E-002
  ## call cooleytukey_outofplace

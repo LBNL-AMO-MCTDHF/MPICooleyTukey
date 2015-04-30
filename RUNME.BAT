@@ -1,7 +1,7 @@
 
-## nprocs=60
+nprocs=60
 
-nprocs=12
+## nprocs=12
 
 mpiargs="-npernode 16 --bysocket"
 

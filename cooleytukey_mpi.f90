@@ -4,8 +4,8 @@
 
 #define BLOCKVARS blocksize1,blocksize2
 #define BLOCKPROD blocksize1*blocksize2
-#define ONED_FLAG
-#define THRxxxxEED_FLAG
+#define ONExxxD_FLAG
+#define THREED_FLAG
 
 !! temporary
 #define TEMPORARYTEST
@@ -369,7 +369,7 @@ recursive subroutine cooleytukey_outofplaceinput_mpi(BLOCKVARS,intranspose,out,d
      call myzfft1d_slowindex_local(intranspose,temptrans,BLOCKPROD,dim1,howmany)
 #else
 #ifdef THREED_FLAG
-     call myzfft3d(outtemp,outtrans,BLOCKVARS,dim1,howmany)
+     call myzfft3d(intranspose,temptrans,BLOCKVARS,dim1,howmany)
 #else
      NOT SUPPORTED.
 #endif
