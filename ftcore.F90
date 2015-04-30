@@ -32,7 +32,7 @@ subroutine myzfft1d(in,out,dim,howmany)
   implicit none
   include "fftw3.f03"
   integer, intent(in) :: dim,howmany
-  type(C_PTR),save :: plan,cdata
+  type(C_PTR),save :: plan
   complex*16,intent(in) :: in(dim,howmany)
   complex*16, intent(out) :: out(dim,howmany)
   integer :: ostride,istride,onembed(1),inembed(1),idist,odist, dims(1)

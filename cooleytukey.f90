@@ -263,7 +263,6 @@ end subroutine cooleytukey_outofplace
 
 recursive subroutine cooleytukey_outofplaceinput(intranspose,out,dim1,pf,howmany)
   implicit none
-  integer :: n2,ii
   integer, intent(in) :: dim1,pf(MAXFACTORS),howmany
   complex*16, intent(in) :: intranspose(dim1,pf(1)*OTHERMACRO,howmany)
   complex*16, intent(out) :: out(dim1,pf(1)*OTHERMACRO,howmany)
@@ -285,7 +284,6 @@ recursive subroutine cooleytukey_outofplaceinput(intranspose,out,dim1,pf,howmany
   call twiddlemult(temptrans,outtrans,dim1*otherfactor,pf(1),howmany)
   call myzfft1d_slowindex(outtrans,out,dim1*otherfactor,pf(1),howmany)
 
-
 end subroutine cooleytukey_outofplaceinput
 
 
@@ -299,8 +297,7 @@ subroutine myzfft1d_slowindex(in,out,dim1,dim2,howmany)
   complex*16, intent(in) :: in(dim1,dim2,howmany)
   complex*16, intent(out) :: out(dim1,dim2,howmany)
   complex*16 ::  fouriermatrix(dim2,dim2),twiddle(dim2)   !!AUTOMATIC
-  integer :: placearray(dim2)
-  integer :: ii,jj,n2
+  integer :: ii,jj
 
 
   call gettwiddlesmall(twiddle,dim2,1)

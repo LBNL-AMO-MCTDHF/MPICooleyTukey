@@ -276,7 +276,7 @@ recursive subroutine cooleytukey_outofplace_mpi(in,outtrans,dim1,pf,proclist,loc
   complex*16, intent(in) :: in(dim1,howmany)
   complex*16, intent(out) :: outtrans(dim1,howmany)
   complex*16 ::  tempout(dim1,howmany),  outtemp(dim1,howmany)
-  integer :: depth, newrank, dim2, newpf(MAXFACTORS),newproclist(localnprocs/pf(1)),ctrank,ctset(pf(1))
+  integer :: depth, newrank, newpf(MAXFACTORS),newproclist(localnprocs/pf(1)),ctrank,ctset(pf(1))
 
   if ((localnprocs/pf(1))*pf(1).ne.localnprocs) then
      write(mpifileptr,*) "Divisibility error outofplace ",localnprocs,pf(1); call mpistop()

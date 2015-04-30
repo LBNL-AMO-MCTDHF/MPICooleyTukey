@@ -9,7 +9,7 @@ program ft_test
 
   integer, parameter :: size=size1*size2
   complex*16 :: input(size), output(size),zoutput1(size),&
-       input1(size),output1(size)
+       input1(size) !!,output1(size)
   real*8 :: realarray(size),randomamount
   integer :: primefactors(7),numfactors,i
 
