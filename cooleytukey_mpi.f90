@@ -2,8 +2,8 @@
 
 #define MAXFACTORS 7
 
-#define BLOCKVARS blocksize
-#define BLOCKPROD blocksize
+#define BLOCKVARS blocksize1,blocksize2
+#define BLOCKPROD blocksize1*blocksize2
 
 !!$
 !!$Apache License
