@@ -4,6 +4,8 @@
 
 #define BLOCKVARS blocksize1,blocksize2
 #define BLOCKPROD blocksize1*blocksize2
+#define ONED_FLAG
+#define THRxxxxEED_FLAG
 
 !!$
 !!$Apache License
@@ -304,10 +306,18 @@ recursive subroutine cooleytukey_outofplace_mpi(BLOCKVARS,in,outtrans,dim1,pf,pr
 
   call twiddlemult_mpi(BLOCKPROD,tempout,outtemp,dim1,depth,newrank,newproclist,pf(1),ctrank,howmany)
   if (depth.eq.1) then
+#ifdef ONED_FLAG
      if (BLOCKPROD.ne.1) then
         write(mpifileptr,*) "blocksize>1 not supported"; call mpistop()
      endif
      call myzfft1d(outtemp,outtrans,dim1,howmany)
+#else
+#ifdef THREED_FLAG
+     call myzfft3d(outtemp,outtrans,BLOCKVARS,dim1,howmany)
+#else
+     NOT SUPPORTED.
+#endif
+#endif
   else
      newpf(1:MAXFACTORS-1)=pf(2:MAXFACTORS); newpf(MAXFACTORS)=1
      call cooleytukey_outofplace_mpi(BLOCKVARS,outtemp,outtrans,dim1,newpf,newproclist,depth,newrank,howmany)
@@ -344,10 +354,18 @@ recursive subroutine cooleytukey_outofplaceinput_mpi(BLOCKVARS,intranspose,out,d
   endif
 
   if (depth.eq.1) then
+#ifdef ONED_FLAG
      if (BLOCKPROD.ne.1) then
         write(mpifileptr,*) "blocksize>1 not supported"; call mpistop()
      endif
      call myzfft1d(intranspose,temptrans,dim1,howmany)
+#else
+#ifdef THREED_FLAG
+     call myzfft3d(outtemp,outtrans,BLOCKVARS,dim1,howmany)
+#else
+     NOT SUPPORTED.
+#endif
+#endif
   else
      newpf(1:MAXFACTORS-1)=pf(2:MAXFACTORS); newpf(MAXFACTORS)=1
      call cooleytukey_outofplaceinput_mpi(BLOCKVARS,intranspose,temptrans,dim1,newpf,newproclist,depth,newrank,howmany)
