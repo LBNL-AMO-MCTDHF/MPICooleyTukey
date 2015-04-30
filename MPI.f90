@@ -104,7 +104,7 @@ subroutine mpistop()
   if (ierr/=0) then
      write(*,*)  "MPI FINALIZE ERR ",ierr,myrank
   endif
-  call sleep(2)
+!!$  call sleep(2)
   write(*,*) "MPI STOP ",myrank
   stop
 end subroutine mpistop

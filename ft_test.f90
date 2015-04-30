@@ -1,7 +1,8 @@
 
 program ft_test
   implicit none
-  integer, parameter :: size1=7, size2=60
+  integer, parameter :: size1=70000, size2=60
+!!$  integer, parameter :: size1=7, size2=60
 !!$  integer, parameter :: size1=35, size2=12
 !!$  integer, parameter :: size1=13, size2=12
 !!$  integer, parameter :: size1=26, size2=6
@@ -48,12 +49,12 @@ program ft_test
   print *
 
   do i=1,size
-     write(*,'(I5,100F10.5)') i, &
+     write(*,'(I20,100F10.5)') i, &
           abs(input(i)), &
           abs(input1(i))
 !!$          abs(output(i)), &
 !!$          abs(output3(i))
-     write(*,'(I5,100F10.5)') i, &
+     write(*,'(I20,100F10.5)') i, &
           real(input(i)), &
           real(input1(i))
 !!$          real(output(i)), &

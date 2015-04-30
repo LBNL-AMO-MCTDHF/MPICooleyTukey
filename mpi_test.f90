@@ -22,7 +22,8 @@ end program mpi_test
 subroutine mpi_core(myrank,nprocs,mpifileptr)
   implicit none
   integer, intent(in) :: myrank,nprocs,mpifileptr
-  integer, parameter :: size1=7
+  integer, parameter :: size1=70000
+!!$  integer, parameter :: size1=7
 !!$  integer, parameter :: size1=35
 !!$  integer, parameter :: size1=13
 !!$  integer, parameter :: size1=26
@@ -85,12 +86,12 @@ call getallprimefactors(nprocs,numfactors,primefactors)
      print *
      
      do i=1,size
-        write(*,'(I5,100F10.5)') i, &
+        write(*,'(I20,100F10.5)') i, &
              abs(input(i)), &
              abs(input0(i))
 !!$             abs(output(i)), &
 !!$             abs(output1(i))
-        write(*,'(I5,100F10.5)') i, &
+        write(*,'(I20,100F10.5)') i, &
              real(input(i)), &
              real(input0(i))
 !!$             real(output(i)), &

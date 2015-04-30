@@ -15,9 +15,6 @@
  ## RUNME.BAT creates README  (This header text is in README.H)
  ##   diff of ft_test.out and mpi_test.out follows
  ##
- ## IT WORKS with one step of recursion (v3)
- ##
- ## NOW DOING COOLEY-TUKEY on slow index too (will be myrank for mpi)
+ ## IT WORKS (v8.00)
  ##
  ##			  
-			  
