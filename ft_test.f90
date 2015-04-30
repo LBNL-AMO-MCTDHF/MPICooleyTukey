@@ -1,7 +1,8 @@
 
 program ft_test
   implicit none
-  integer, parameter :: size1=70000, size2=60
+  integer, parameter :: size1=70000, size2=480
+!!$  integer, parameter :: size1=70000, size2=60
 !!$  integer, parameter :: size1=7, size2=60
 !!$  integer, parameter :: size1=35, size2=12
 !!$  integer, parameter :: size1=13, size2=12
@@ -32,14 +33,24 @@ program ft_test
   print *, primefactors(1:numfactors)
   print *
 
-  print *, "## call ft. randomamount is",randomamount
+  write(*,*) "randomamount is ", randomamount
+  write(*,'(A50,$)') "## call ft.  "
+  call system('date')
   call myzfft1d(input,output,size,1)
 
-  print *, "## call cooleytukey_outofplace"
+  write(*,'(A50,$)') "## done ft   "
+  call system('date')
+
+  write(*,'(A50,$)') "## call cooleytukey_outofplace  "
+  call system('date')
   call cooleytukey_outofplace(input,zoutput1,size1,primefactors,1)
 
   print *, "## call cooleytukey_outofplace_inverse"
   call cooleytukey_outofplace_inverse(zoutput1,input1,size1,primefactors,1)
+  write(*,'(A50,$)') "## done cooleytukey_outofplace_inverse  "
+  call system('date')
+
+
 
 !!$  call cooleytukey_replace(1,zoutput1,output1,size1,primefactors,1)
 

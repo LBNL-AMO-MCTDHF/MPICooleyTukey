@@ -29,8 +29,9 @@ subroutine mpi_core(myrank,nprocs,mpifileptr)
 !!$  integer, parameter :: size1=26
 !!$  integer, parameter :: size1=52
   integer :: size
-  complex*16 :: input(size1*nprocs), output(size1*nprocs),zoutput1(size1,nprocs),&
-       input1(size1,nprocs),input0(size1*nprocs)  !!,output1(size1,nprocs)
+  complex*16 :: input(size1*nprocs), zoutput1(size1,nprocs),&
+       input1(size1,nprocs), & !!TEMP output(size1*nprocs),
+       input0(size1*nprocs)  !!,output1(size1,nprocs)
   real*8 :: realarray(size1*nprocs),randomamount
   integer :: primefactors(7),numfactors,i,proclist(nprocs)
 
@@ -57,8 +58,10 @@ call getallprimefactors(nprocs,numfactors,primefactors)
   write(mpifileptr,*) primefactors(1:numfactors)
   write(mpifileptr,*)
 
-  write(mpifileptr,*) "## call ft. randomamount is",randomamount
-  call myzfft1d(input,output,size,1)
+  write(mpifileptr,*) "randomamount is ", randomamount
+
+!!TEMP  write(mpifileptr,*) "## call ft.  "
+!!TEMP  call myzfft1d(input,output,size,1)
 
   input1(:,:)=RESHAPE(input,(/size1,nprocs/))
 
@@ -66,13 +69,25 @@ call getallprimefactors(nprocs,numfactors,primefactors)
      proclist(i)=i
   enddo
 
-  write(mpifileptr,*) "## call cooleytukey_outofplace_mpi"
+  if (myrank.eq.1) then
+     write(mpifileptr,'(A50,$)') "## call cooleytukey_outofplace_mpi  "
+     call system('date')
+  else
+     write(mpifileptr,*) "## call cooleytukey_outofplace_mpi  "
+  endif
   call cooleytukey_outofplace_mpi(1,1,input1(:,myrank),zoutput1(:,myrank),size1,primefactors,proclist,nprocs,myrank,1)
 
   call mympigather(zoutput1(:,myrank),zoutput1,size1)
 
   write(mpifileptr,*) "## call cooleytukey_outofplace_inverse_mpi"
   call cooleytukey_outofplace_inverse_mpi(1,1,zoutput1(:,myrank),input1(:,myrank),size1,primefactors,proclist,nprocs,myrank,1)
+
+  if (myrank.eq.1) then
+     write(mpifileptr,'(A50,$)') "## done cooleytukey_outofplace_inverse_mpi  "
+     call system('date')
+  else
+     write(mpifileptr,*) "## done cooleytukey_outofplace_inverse_mpi  "
+  endif
 
   call mympigather(input1(:,myrank),input0,size1)
 
