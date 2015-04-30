@@ -307,10 +307,7 @@ recursive subroutine cooleytukey_outofplace_mpi(BLOCKVARS,in,outtrans,dim1,pf,pr
   call twiddlemult_mpi(BLOCKPROD,tempout,outtemp,dim1,depth,newrank,pf(1),ctrank,howmany)
   if (depth.eq.1) then
 #ifdef ONED_FLAG
-     if (BLOCKPROD.ne.1) then
-        write(mpifileptr,*) "blocksize>1 not supported"; call mpistop()
-     endif
-     call myzfft1d(outtemp,outtrans,dim1,howmany)
+     call myzfft1d_slowindex_local(outtemp,outtrans,BLOCKPROD,dim1,howmany)
 #else
 #ifdef THREED_FLAG
      call myzfft3d(outtemp,outtrans,BLOCKVARS,dim1,howmany)
@@ -355,10 +352,7 @@ recursive subroutine cooleytukey_outofplaceinput_mpi(BLOCKVARS,intranspose,out,d
 
   if (depth.eq.1) then
 #ifdef ONED_FLAG
-     if (BLOCKPROD.ne.1) then
-        write(mpifileptr,*) "blocksize>1 not supported"; call mpistop()
-     endif
-     call myzfft1d(intranspose,temptrans,dim1,howmany)
+     call myzfft1d_slowindex_local(intranspose,temptrans,BLOCKPROD,dim1,howmany)
 #else
 #ifdef THREED_FLAG
      call myzfft3d(outtemp,outtrans,BLOCKVARS,dim1,howmany)
@@ -504,3 +498,26 @@ subroutine simple_summa(in, out,mat,howmany,ctrank,localnumprocs,proclist)
   endif
 
 end subroutine simple_summa
+
+
+
+
+subroutine myzfft1d_slowindex_local(in,out,dim1,dim2,howmany)
+  implicit none
+  integer, intent(in) :: dim1,dim2,howmany
+  complex*16, intent(in) :: in(dim1,dim2,howmany)
+  complex*16, intent(out) :: out(dim1,dim2,howmany)
+  complex*16 :: intrans(dim2,dim1,howmany),outtrans(dim2,dim1,howmany)
+  integer :: ii
+
+  do ii=1,howmany
+     intrans(:,:,ii)=TRANSPOSE(in(:,:,ii))
+  enddo
+  call myzfft1d(intrans,outtrans,dim2,dim1*howmany)
+
+  do ii=1,howmany
+     out(:,:,ii)=TRANSPOSE(outtrans(:,:,ii))
+  enddo
+
+end subroutine myzfft1d_slowindex_local
+  
