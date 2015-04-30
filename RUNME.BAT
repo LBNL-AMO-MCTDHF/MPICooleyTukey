@@ -3,9 +3,10 @@
 
 nprocs=12
 
+mpiargs="-npernode 16 --bysocket"
 
 echo "RUNNING MPI_TEST"
-mpirun -n $nprocs mpi_test > mpi_test.out
+mpirun $mpiargs -n $nprocs mpi_test > mpi_test.out
 
 echo "RUNNING FT_TEST"
 ./ft_test > ft_test.out

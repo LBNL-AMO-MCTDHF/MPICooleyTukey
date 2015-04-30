@@ -1270,15 +1270,15 @@
   420   0.00988   0.00988
  
  OK MPI_TEST DONE!
- MPI STOP            9
- MPI STOP           10
+ MPI STOP            2
  MPI STOP            3
- MPI STOP            4
  MPI STOP            5
+ MPI STOP            6
  MPI STOP            7
  MPI STOP            8
- MPI STOP            2
- MPI STOP           12
- MPI STOP            1
+ MPI STOP            9
+ MPI STOP           10
  MPI STOP           11
- MPI STOP            6
+ MPI STOP            1
+ MPI STOP            4
+ MPI STOP           12

@@ -247,11 +247,11 @@ end subroutine cooleytukey_outofplace_inverse_mpi
 
 
 
-subroutine twiddlemult_mpi(blocksize,in,out,dim1,numfactored,myfactor,factorlist,localnumprocs,ctrank,howmany)
+subroutine twiddlemult_mpi(blocksize,in,out,dim1,numfactored,myfactor,localnumprocs,ctrank,howmany)
   use fileptrmod
   use ct_mpimod   !! nprocs check
   implicit none
-  integer, intent(in) :: blocksize,dim1,howmany,localnumprocs,numfactored,myfactor,ctrank,factorlist(numfactored)
+  integer, intent(in) :: blocksize,dim1,howmany,localnumprocs,numfactored,myfactor,ctrank
   complex*16, intent(in) :: in(blocksize,dim1,howmany)
   complex*16, intent(out) :: out(blocksize,dim1,howmany)
   complex*16 :: twiddle1(dim1,numfactored),tt1(dim1)
@@ -304,7 +304,7 @@ recursive subroutine cooleytukey_outofplace_mpi(BLOCKVARS,in,outtrans,dim1,pf,pr
 
   call myzfft1d_slowindex_mpi(in,tempout,pf(1),ctrank,ctset,dim1*howmany*BLOCKPROD)
 
-  call twiddlemult_mpi(BLOCKPROD,tempout,outtemp,dim1,depth,newrank,newproclist,pf(1),ctrank,howmany)
+  call twiddlemult_mpi(BLOCKPROD,tempout,outtemp,dim1,depth,newrank,pf(1),ctrank,howmany)
   if (depth.eq.1) then
 #ifdef ONED_FLAG
      if (BLOCKPROD.ne.1) then
@@ -371,7 +371,7 @@ recursive subroutine cooleytukey_outofplaceinput_mpi(BLOCKVARS,intranspose,out,d
      call cooleytukey_outofplaceinput_mpi(BLOCKVARS,intranspose,temptrans,dim1,newpf,newproclist,depth,newrank,howmany)
   endif
 
-  call twiddlemult_mpi(BLOCKPROD,temptrans,outtrans,dim1,depth,newrank,newproclist,pf(1),ctrank,howmany)
+  call twiddlemult_mpi(BLOCKPROD,temptrans,outtrans,dim1,depth,newrank,pf(1),ctrank,howmany)
   call myzfft1d_slowindex_mpi(outtrans,out,pf(1),ctrank,ctset,dim1*howmany*BLOCKPROD)
 
 end subroutine cooleytukey_outofplaceinput_mpi
