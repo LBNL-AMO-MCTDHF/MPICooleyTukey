@@ -7,6 +7,20 @@
 #define ONED_FLAG
 #define THRxxxxEED_FLAG
 
+!! temporary
+#define TEMPORARYTEST
+#ifdef TEMPORARYTEST
+  subroutine myzfft3d(in,out,dim1,dim2,dim3,howmany)
+    implicit none
+    integer, intent(in) :: dim1,dim2,dim3,howmany
+    complex*16, intent(in) :: in(dim1,dim2,dim3,howmany)
+    complex*16, intent(out) :: out(dim1,dim2,dim3,howmany)
+    call myzfft1d_slowindex_local(in,out,dim1*dim2,dim3,howmany)
+  end subroutine myzfft3d
+#endif
+
+
+
 !!$
 !!$Apache License
 !!$                           Version 2.0, January 2004
