@@ -2,6 +2,9 @@
 
 #define MAXFACTORS 7
 
+#define BLOCKVARS blocksize
+#define BLOCKPROD blocksize
+
 !!$
 !!$Apache License
 !!$                           Version 2.0, January 2004
@@ -227,15 +230,15 @@ end subroutine ctset
 
 !! INVERSE OF cooleytukey_outofplace_mpi
 
-subroutine cooleytukey_outofplace_inverse_mpi(blocksize,intranspose,out,dim1,pf,proclist,localnprocs,localrank,howmany)
+subroutine cooleytukey_outofplace_inverse_mpi(BLOCKVARS,intranspose,out,dim1,pf,proclist,localnprocs,localrank,howmany)
   implicit none
-  integer, intent(in) :: blocksize,dim1,localnprocs,localrank,howmany,pf(MAXFACTORS),proclist(localnprocs)
-  complex*16, intent(in) :: intranspose(blocksize,dim1,howmany)
-  complex*16, intent(out) :: out(blocksize,dim1,howmany)
-  complex*16 ::  intransconjg(blocksize,dim1,howmany),  outconjg(blocksize,dim1,howmany)
+  integer, intent(in) :: BLOCKVARS,dim1,localnprocs,localrank,howmany,pf(MAXFACTORS),proclist(localnprocs)
+  complex*16, intent(in) :: intranspose(BLOCKPROD,dim1,howmany)
+  complex*16, intent(out) :: out(BLOCKPROD,dim1,howmany)
+  complex*16 ::  intransconjg(BLOCKPROD,dim1,howmany),  outconjg(BLOCKPROD,dim1,howmany)
 
   intransconjg(:,:,:)=CONJG(intranspose(:,:,:))
-  call cooleytukey_outofplaceinput_mpi(blocksize,intransconjg,outconjg,dim1,pf,proclist,localnprocs,localrank,howmany)
+  call cooleytukey_outofplaceinput_mpi(BLOCKVARS,intransconjg,outconjg,dim1,pf,proclist,localnprocs,localrank,howmany)
   out(:,:,:)=CONJG(outconjg(:,:,:))/dim1/localnprocs
 
 end subroutine cooleytukey_outofplace_inverse_mpi
@@ -271,13 +274,13 @@ end subroutine twiddlemult_mpi
 
 !! fourier transform with OUT-OF-PLACE OUTPUT. 
 
-recursive subroutine cooleytukey_outofplace_mpi(blocksize,in,outtrans,dim1,pf,proclist,localnprocs,localrank,howmany)
+recursive subroutine cooleytukey_outofplace_mpi(BLOCKVARS,in,outtrans,dim1,pf,proclist,localnprocs,localrank,howmany)
   use fileptrmod
   implicit none
-  integer, intent(in) :: blocksize,dim1,localnprocs,localrank,howmany,pf(MAXFACTORS),proclist(localnprocs/pf(1),pf(1))
-  complex*16, intent(in) :: in(blocksize,dim1,howmany)
-  complex*16, intent(out) :: outtrans(blocksize,dim1,howmany)
-  complex*16 ::  tempout(blocksize,dim1,howmany),  outtemp(blocksize,dim1,howmany)
+  integer, intent(in) :: BLOCKVARS,dim1,localnprocs,localrank,howmany,pf(MAXFACTORS),proclist(localnprocs/pf(1),pf(1))
+  complex*16, intent(in) :: in(BLOCKPROD,dim1,howmany)
+  complex*16, intent(out) :: outtrans(BLOCKPROD,dim1,howmany)
+  complex*16 ::  tempout(BLOCKPROD,dim1,howmany),  outtemp(BLOCKPROD,dim1,howmany)
   integer :: depth, newrank, newpf(MAXFACTORS),newproclist(localnprocs/pf(1)),ctrank,ctset(pf(1))
 
   if ((localnprocs/pf(1))*pf(1).ne.localnprocs) then
@@ -297,30 +300,30 @@ recursive subroutine cooleytukey_outofplace_mpi(blocksize,in,outtrans,dim1,pf,pr
      write(*,*) "RANK FAIL INVERSE",proclist(newrank,ctrank),localrank,newrank,depth,ctrank,pf(1); call mpistop()
   endif
 
-  call myzfft1d_slowindex_mpi(in,tempout,pf(1),ctrank,ctset,dim1*howmany*blocksize)
+  call myzfft1d_slowindex_mpi(in,tempout,pf(1),ctrank,ctset,dim1*howmany*BLOCKPROD)
 
-  call twiddlemult_mpi(blocksize,tempout,outtemp,dim1,depth,newrank,newproclist,pf(1),ctrank,howmany)
+  call twiddlemult_mpi(BLOCKPROD,tempout,outtemp,dim1,depth,newrank,newproclist,pf(1),ctrank,howmany)
   if (depth.eq.1) then
-     if (blocksize.ne.1) then
+     if (BLOCKPROD.ne.1) then
         write(mpifileptr,*) "blocksize>1 not supported"; call mpistop()
      endif
      call myzfft1d(outtemp,outtrans,dim1,howmany)
   else
      newpf(1:MAXFACTORS-1)=pf(2:MAXFACTORS); newpf(MAXFACTORS)=1
-     call cooleytukey_outofplace_mpi(blocksize,outtemp,outtrans,dim1,newpf,newproclist,depth,newrank,howmany)
+     call cooleytukey_outofplace_mpi(BLOCKVARS,outtemp,outtrans,dim1,newpf,newproclist,depth,newrank,howmany)
   endif
 
 end subroutine cooleytukey_outofplace_mpi
 
 
 
-recursive subroutine cooleytukey_outofplaceinput_mpi(blocksize,intranspose,out,dim1,pf,proclist,localnprocs,localrank,howmany)
+recursive subroutine cooleytukey_outofplaceinput_mpi(BLOCKVARS,intranspose,out,dim1,pf,proclist,localnprocs,localrank,howmany)
   use fileptrmod
   implicit none
-  integer, intent(in) :: blocksize,dim1,localnprocs,localrank,howmany,pf(MAXFACTORS),proclist(localnprocs/pf(1),pf(1))
-  complex*16, intent(in) :: intranspose(blocksize,dim1,howmany)
-  complex*16, intent(out) :: out(blocksize,dim1,howmany)
-  complex*16 ::   temptrans(blocksize,dim1,howmany),outtrans(blocksize,dim1,howmany)
+  integer, intent(in) :: BLOCKVARS,dim1,localnprocs,localrank,howmany,pf(MAXFACTORS),proclist(localnprocs/pf(1),pf(1))
+  complex*16, intent(in) :: intranspose(BLOCKPROD,dim1,howmany)
+  complex*16, intent(out) :: out(BLOCKPROD,dim1,howmany)
+  complex*16 ::   temptrans(BLOCKPROD,dim1,howmany),outtrans(BLOCKPROD,dim1,howmany)
   integer :: depth, newrank, newpf(MAXFACTORS),newproclist(localnprocs/pf(1)),ctrank,ctset(pf(1))
 
   if ((localnprocs/pf(1))*pf(1).ne.localnprocs) then
@@ -341,17 +344,17 @@ recursive subroutine cooleytukey_outofplaceinput_mpi(blocksize,intranspose,out,d
   endif
 
   if (depth.eq.1) then
-     if (blocksize.ne.1) then
+     if (BLOCKPROD.ne.1) then
         write(mpifileptr,*) "blocksize>1 not supported"; call mpistop()
      endif
      call myzfft1d(intranspose,temptrans,dim1,howmany)
   else
      newpf(1:MAXFACTORS-1)=pf(2:MAXFACTORS); newpf(MAXFACTORS)=1
-     call cooleytukey_outofplaceinput_mpi(blocksize,intranspose,temptrans,dim1,newpf,newproclist,depth,newrank,howmany)
+     call cooleytukey_outofplaceinput_mpi(BLOCKVARS,intranspose,temptrans,dim1,newpf,newproclist,depth,newrank,howmany)
   endif
 
-  call twiddlemult_mpi(blocksize,temptrans,outtrans,dim1,depth,newrank,newproclist,pf(1),ctrank,howmany)
-  call myzfft1d_slowindex_mpi(outtrans,out,pf(1),ctrank,ctset,dim1*howmany*blocksize)
+  call twiddlemult_mpi(BLOCKPROD,temptrans,outtrans,dim1,depth,newrank,newproclist,pf(1),ctrank,howmany)
+  call myzfft1d_slowindex_mpi(outtrans,out,pf(1),ctrank,ctset,dim1*howmany*BLOCKPROD)
 
 end subroutine cooleytukey_outofplaceinput_mpi
 
