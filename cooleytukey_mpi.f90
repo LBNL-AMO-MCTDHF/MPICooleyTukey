@@ -227,30 +227,30 @@ end subroutine ctset
 
 !! INVERSE OF cooleytukey_outofplace_mpi
 
-subroutine cooleytukey_outofplace_inverse_mpi(intranspose,out,dim1,pf,proclist,localnprocs,localrank,howmany)
+subroutine cooleytukey_outofplace_inverse_mpi(blocksize,intranspose,out,dim1,pf,proclist,localnprocs,localrank,howmany)
   implicit none
-  integer, intent(in) :: dim1,localnprocs,localrank,howmany,pf(MAXFACTORS),proclist(localnprocs)
-  complex*16, intent(in) :: intranspose(dim1,howmany)
-  complex*16, intent(out) :: out(dim1,howmany)
-  complex*16 ::  intransconjg(dim1,howmany),  outconjg(dim1,howmany)
+  integer, intent(in) :: blocksize,dim1,localnprocs,localrank,howmany,pf(MAXFACTORS),proclist(localnprocs)
+  complex*16, intent(in) :: intranspose(blocksize,dim1,howmany)
+  complex*16, intent(out) :: out(blocksize,dim1,howmany)
+  complex*16 ::  intransconjg(blocksize,dim1,howmany),  outconjg(blocksize,dim1,howmany)
 
-  intransconjg(:,:)=CONJG(intranspose(:,:))
-  call cooleytukey_outofplaceinput_mpi(intransconjg,outconjg,dim1,pf,proclist,localnprocs,localrank,howmany)
-  out(:,:)=CONJG(outconjg(:,:))/dim1/localnprocs
+  intransconjg(:,:,:)=CONJG(intranspose(:,:,:))
+  call cooleytukey_outofplaceinput_mpi(blocksize,intransconjg,outconjg,dim1,pf,proclist,localnprocs,localrank,howmany)
+  out(:,:,:)=CONJG(outconjg(:,:,:))/dim1/localnprocs
 
 end subroutine cooleytukey_outofplace_inverse_mpi
 
 
 
-subroutine twiddlemult_mpi(in,out,dim1,numfactored,myfactor,factorlist,localnumprocs,ctrank,howmany)
+subroutine twiddlemult_mpi(blocksize,in,out,dim1,numfactored,myfactor,factorlist,localnumprocs,ctrank,howmany)
   use fileptrmod
   use ct_mpimod   !! nprocs check
   implicit none
-  integer, intent(in) :: dim1,howmany,localnumprocs,numfactored,myfactor,ctrank,factorlist(numfactored)
-  complex*16, intent(in) :: in(dim1,howmany)
-  complex*16, intent(out) :: out(dim1,howmany)
+  integer, intent(in) :: blocksize,dim1,howmany,localnumprocs,numfactored,myfactor,ctrank,factorlist(numfactored)
+  complex*16, intent(in) :: in(blocksize,dim1,howmany)
+  complex*16, intent(out) :: out(blocksize,dim1,howmany)
   complex*16 :: twiddle1(dim1,numfactored),tt1(dim1)
-  integer :: ii
+  integer :: ii,n1
 
   if (myfactor.lt.0.or.myfactor.gt.numfactored) then
      write (mpifileptr,*) "bad factor",myfactor,numfactored; call mpistop()
@@ -260,7 +260,9 @@ subroutine twiddlemult_mpi(in,out,dim1,numfactored,myfactor,factorlist,localnump
 
   tt1(:)=twiddle1(:,myfactor)**(ctrank-1)   !!! ???? CRUX 
   do ii=1,howmany
-     out(:,ii) = in(:,ii) * tt1(:)
+     do n1=1,dim1
+        out(:,n1,ii) = in(:,n1,ii) * tt1(n1)
+     enddo
   enddo
 
 end subroutine twiddlemult_mpi
@@ -269,13 +271,13 @@ end subroutine twiddlemult_mpi
 
 !! fourier transform with OUT-OF-PLACE OUTPUT. 
 
-recursive subroutine cooleytukey_outofplace_mpi(in,outtrans,dim1,pf,proclist,localnprocs,localrank,howmany)
+recursive subroutine cooleytukey_outofplace_mpi(blocksize,in,outtrans,dim1,pf,proclist,localnprocs,localrank,howmany)
   use fileptrmod
   implicit none
-  integer, intent(in) :: dim1,localnprocs,localrank,howmany,pf(MAXFACTORS),proclist(localnprocs/pf(1),pf(1))
-  complex*16, intent(in) :: in(dim1,howmany)
-  complex*16, intent(out) :: outtrans(dim1,howmany)
-  complex*16 ::  tempout(dim1,howmany),  outtemp(dim1,howmany)
+  integer, intent(in) :: blocksize,dim1,localnprocs,localrank,howmany,pf(MAXFACTORS),proclist(localnprocs/pf(1),pf(1))
+  complex*16, intent(in) :: in(blocksize,dim1,howmany)
+  complex*16, intent(out) :: outtrans(blocksize,dim1,howmany)
+  complex*16 ::  tempout(blocksize,dim1,howmany),  outtemp(blocksize,dim1,howmany)
   integer :: depth, newrank, newpf(MAXFACTORS),newproclist(localnprocs/pf(1)),ctrank,ctset(pf(1))
 
   if ((localnprocs/pf(1))*pf(1).ne.localnprocs) then
@@ -295,27 +297,30 @@ recursive subroutine cooleytukey_outofplace_mpi(in,outtrans,dim1,pf,proclist,loc
      write(*,*) "RANK FAIL INVERSE",proclist(newrank,ctrank),localrank,newrank,depth,ctrank,pf(1); call mpistop()
   endif
 
-  call myzfft1d_slowindex_mpi(in,tempout,pf(1),ctrank,ctset,dim1*howmany)
+  call myzfft1d_slowindex_mpi(in,tempout,pf(1),ctrank,ctset,dim1*howmany*blocksize)
 
-  call twiddlemult_mpi(tempout,outtemp,dim1,depth,newrank,newproclist,pf(1),ctrank,howmany)
+  call twiddlemult_mpi(blocksize,tempout,outtemp,dim1,depth,newrank,newproclist,pf(1),ctrank,howmany)
   if (depth.eq.1) then
+     if (blocksize.ne.1) then
+        write(mpifileptr,*) "blocksize>1 not supported"; call mpistop()
+     endif
      call myzfft1d(outtemp,outtrans,dim1,howmany)
   else
      newpf(1:MAXFACTORS-1)=pf(2:MAXFACTORS); newpf(MAXFACTORS)=1
-     call cooleytukey_outofplace_mpi(outtemp,outtrans,dim1,newpf,newproclist,depth,newrank,howmany)
+     call cooleytukey_outofplace_mpi(blocksize,outtemp,outtrans,dim1,newpf,newproclist,depth,newrank,howmany)
   endif
 
 end subroutine cooleytukey_outofplace_mpi
 
 
 
-recursive subroutine cooleytukey_outofplaceinput_mpi(intranspose,out,dim1,pf,proclist,localnprocs,localrank,howmany)
+recursive subroutine cooleytukey_outofplaceinput_mpi(blocksize,intranspose,out,dim1,pf,proclist,localnprocs,localrank,howmany)
   use fileptrmod
   implicit none
-  integer, intent(in) :: dim1,localnprocs,localrank,howmany,pf(MAXFACTORS),proclist(localnprocs/pf(1),pf(1))
-  complex*16, intent(in) :: intranspose(dim1,howmany)
-  complex*16, intent(out) :: out(dim1,howmany)
-  complex*16 ::   temptrans(dim1,howmany),outtrans(dim1,howmany)
+  integer, intent(in) :: blocksize,dim1,localnprocs,localrank,howmany,pf(MAXFACTORS),proclist(localnprocs/pf(1),pf(1))
+  complex*16, intent(in) :: intranspose(blocksize,dim1,howmany)
+  complex*16, intent(out) :: out(blocksize,dim1,howmany)
+  complex*16 ::   temptrans(blocksize,dim1,howmany),outtrans(blocksize,dim1,howmany)
   integer :: depth, newrank, newpf(MAXFACTORS),newproclist(localnprocs/pf(1)),ctrank,ctset(pf(1))
 
   if ((localnprocs/pf(1))*pf(1).ne.localnprocs) then
@@ -336,14 +341,17 @@ recursive subroutine cooleytukey_outofplaceinput_mpi(intranspose,out,dim1,pf,pro
   endif
 
   if (depth.eq.1) then
+     if (blocksize.ne.1) then
+        write(mpifileptr,*) "blocksize>1 not supported"; call mpistop()
+     endif
      call myzfft1d(intranspose,temptrans,dim1,howmany)
   else
      newpf(1:MAXFACTORS-1)=pf(2:MAXFACTORS); newpf(MAXFACTORS)=1
-     call cooleytukey_outofplaceinput_mpi(intranspose,temptrans,dim1,newpf,newproclist,depth,newrank,howmany)
+     call cooleytukey_outofplaceinput_mpi(blocksize,intranspose,temptrans,dim1,newpf,newproclist,depth,newrank,howmany)
   endif
 
-  call twiddlemult_mpi(temptrans,outtrans,dim1,depth,newrank,newproclist,pf(1),ctrank,howmany)
-  call myzfft1d_slowindex_mpi(outtrans,out,pf(1),ctrank,ctset,dim1*howmany)
+  call twiddlemult_mpi(blocksize,temptrans,outtrans,dim1,depth,newrank,newproclist,pf(1),ctrank,howmany)
+  call myzfft1d_slowindex_mpi(outtrans,out,pf(1),ctrank,ctset,dim1*howmany*blocksize)
 
 end subroutine cooleytukey_outofplaceinput_mpi
 
