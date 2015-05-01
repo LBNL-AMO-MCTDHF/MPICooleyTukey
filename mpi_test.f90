@@ -22,11 +22,11 @@ end program mpi_test
 subroutine mpi_core(myrank,nprocs,mpifileptr)
   implicit none
   integer, intent(in) :: myrank,nprocs,mpifileptr
-!!$  integer, parameter :: size1=7
+  integer, parameter :: size1=7
 !!$  integer, parameter :: size1=70000
 !!$  integer, parameter :: size1=7
 !!$  integer, parameter :: size1=35
-  integer, parameter :: size1=13
+!!$  integer, parameter :: size1=13
 !!$  integer, parameter :: size1=26
 !!$  integer, parameter :: size1=52
   integer :: size
