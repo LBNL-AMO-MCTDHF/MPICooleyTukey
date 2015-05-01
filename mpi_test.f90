@@ -22,11 +22,11 @@ end program mpi_test
 subroutine mpi_core(myrank,nprocs,mpifileptr)
   implicit none
   integer, intent(in) :: myrank,nprocs,mpifileptr
-  integer, parameter :: size1=7
+!!$  integer, parameter :: size1=7
 !!$  integer, parameter :: size1=70000
 !!$  integer, parameter :: size1=7
 !!$  integer, parameter :: size1=35
-!!$  integer, parameter :: size1=13
+  integer, parameter :: size1=13
 !!$  integer, parameter :: size1=26
 !!$  integer, parameter :: size1=52
   integer :: size
@@ -84,7 +84,7 @@ call getallprimefactors(nprocs,numfactors,primefactors)
   write(mpifileptr,*) "## call cooleytukey_outofplace_backward_mpi"
   call ctdim(1)
   call cooleytukey_outofplace_backward_mpi(zoutput1(:,myrank),input1(:,myrank),1,1,size1,primefactors,proclist,nprocs,myrank,1)
-  input1(:,myrank)=input1(:,myrank)/size1
+  input1(:,myrank)=input1(:,myrank)/size1/nprocs
 
   if (myrank.eq.1) then
      write(mpifileptr,'(A50,$)') "## done cooleytukey_outofplace_backward_mpi  "

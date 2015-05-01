@@ -240,23 +240,19 @@ recursive subroutine cooleytukey_outofplace_mpi(in,outtrans,dim2,dim3,dim1,pf,pr
   ctset(:)=proclist(newrank,:)
   newproclist=proclist(:,ctrank)
 
-  print *, "go out of place",ctrank,localrank,newrank
+!!  print *, "go out of place",ctrank,localrank,newrank
 
   if (mod(proclist(newrank,ctrank)-1,localnprocs)+1.ne.localrank) then
      write(*,*) "RANK FAIL",proclist(newrank,ctrank),localrank,newrank,depth,ctrank,pf(1); call mpistop()
   endif
 
-  print *, "NOW SLOWINDEX",ctrank,localrank,pf(1)
+!!  print *, "NOW SLOWINDEX",ctrank,localrank,pf(1)
 
   call myzfft1d_slowindex_mpi(in,tempout,pf(1),ctrank,ctset,dim1*dim2*dim3*howmany)
 
-  print *, "OK SLOWINDEX",ctrank,localrank
-
-  write(mpifileptr,*) "GOOOdddO"
-
   call twiddlemult_mpi(dim2*dim3,tempout,outtemp,dim1,depth,newrank,pf(1),ctrank,howmany)
 
-  write(mpifileptr,*) "GOO222OO"
+!!  write(mpifileptr,*) "GOO222OO"
 
   if (depth.eq.1) then
      select case(ct_dimensionality)
@@ -264,10 +260,10 @@ recursive subroutine cooleytukey_outofplace_mpi(in,outtrans,dim2,dim3,dim1,pf,pr
         call myzfft1d_slowindex_local(outtemp,outtrans,dim2*dim3,dim1,howmany)
      case(3)
 
-  write(mpifileptr,*) "GOOO4444O"
+!!  write(mpifileptr,*) "GOOO4444O"
         call myzfft3d(outtemp,outtrans,dim2,dim3,dim1,howmany)
 
-  write(mpifileptr,*) "GOO2222OO5555"
+!!  write(mpifileptr,*) "GOO2222OO5555"
 
      case default
         write(mpifileptr,*) "NOT SUPPORTED ct_dimensionality",ct_dimensionality; call mpistop()
@@ -275,11 +271,11 @@ recursive subroutine cooleytukey_outofplace_mpi(in,outtrans,dim2,dim3,dim1,pf,pr
   else
      newpf(1:MAXFACTORS-1)=pf(2:MAXFACTORS); newpf(MAXFACTORS)=1
 
-  write(mpifileptr,*) "cALLL"
+!!  write(mpifileptr,*) "cALLL"
 
      call cooleytukey_outofplace_mpi(outtemp,outtrans,dim2,dim3,dim1,newpf,newproclist,depth,newrank,howmany)
 
-  write(mpifileptr,*) "okcALLL"
+!!!  write(mpifileptr,*) "okcALLL"
 
   endif
 
