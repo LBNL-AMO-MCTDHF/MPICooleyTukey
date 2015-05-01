@@ -9,7 +9,8 @@ default: ft_test mpi_test
 clean:
 	rm *.o *.a *genmod* *.mod *~ mpi_test ft_test; cd DFFTPACK; make clean
 
-TESTSRC = cooleytukey.o ft_test.o ftcore.o cooleytukey_shared.o
+# mpi.o because moved subs into shared to accord with lawrencium
+TESTSRC = cooleytukey.o ft_test.o ftcore.o cooleytukey_shared.o MPI.o
 
 MPISRC = cooleytukey_mpi.o mpi_test.o ftcore.o MPI.o cooleytukey_shared.o
 

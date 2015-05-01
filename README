@@ -23,14 +23,14 @@
 ---
 >  Go mpi_test. Dimensions are            7           9
 6,10c6,8
-<                                      ## call ft.  Fri May  1 07:03:00 PDT 2015
-<                                      ## done ft   Fri May  1 07:03:00 PDT 2015
-<                   ## call cooleytukey_outofplace  Fri May  1 07:03:00 PDT 2015
+<                                      ## call ft.  Fri May  1 07:52:32 PDT 2015
+<                                      ## done ft   Fri May  1 07:52:32 PDT 2015
+<                   ## call cooleytukey_outofplace  Fri May  1 07:52:32 PDT 2015
 <  ## call cooleytukey_outofplace_inverse
-<           ## done cooleytukey_outofplace_inverse  Fri May  1 07:03:00 PDT 2015
+<           ## done cooleytukey_outofplace_inverse  Fri May  1 07:52:32 PDT 2015
 ---
->               ## call cooleytukey_outofplace_mpi  Fri May  1 07:02:59 PDT 2015
+>               ## call cooleytukey_outofplace_mpi  Fri May  1 07:52:32 PDT 2015
 >  ## call cooleytukey_outofplace_inverse_mpi
->       ## done cooleytukey_outofplace_inverse_mpi  Fri May  1 07:03:00 PDT 2015
+>       ## done cooleytukey_outofplace_inverse_mpi  Fri May  1 07:52:32 PDT 2015
 203a202,211
 >  OK MPI_TEST DONE!
