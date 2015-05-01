@@ -1,7 +1,8 @@
 
 program ft_test
   implicit none
-  integer, parameter :: size1=70000, size2=480
+  integer, parameter :: size1=7, size2=9
+!!$  integer, parameter :: size1=70000, size2=480
 !!$  integer, parameter :: size1=70000, size2=60
 !!$  integer, parameter :: size1=7, size2=60
 !!$  integer, parameter :: size1=35, size2=12

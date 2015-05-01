@@ -1,5 +1,7 @@
 
-nprocs=480
+nprocs=9
+
+## nprocs=480
 
 ## nprocs=60
 
