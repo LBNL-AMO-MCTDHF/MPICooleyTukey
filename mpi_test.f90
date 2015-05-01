@@ -5,7 +5,7 @@ program mpi_test
 
   call mpistart()
   call getmyranknprocs(myrank,nprocs)
-  call ctset()
+  call ctset(1)
 
   if (myrank.eq.1) then
      mpifileptr=6
@@ -76,18 +76,21 @@ call getallprimefactors(nprocs,numfactors,primefactors)
   else
      write(mpifileptr,*) "## call cooleytukey_outofplace_mpi  "
   endif
-  call cooleytukey_outofplace_mpi(1,1,input1(:,myrank),zoutput1(:,myrank),size1,primefactors,proclist,nprocs,myrank,1)
+  call ctdim(1)
+  call cooleytukey_outofplace_mpi(input1(:,myrank),zoutput1(:,myrank),1,1,size1,primefactors,proclist,nprocs,myrank,1)
 
   call mympigather(zoutput1(:,myrank),zoutput1,size1)
 
-  write(mpifileptr,*) "## call cooleytukey_outofplace_inverse_mpi"
-  call cooleytukey_outofplace_inverse_mpi(1,1,zoutput1(:,myrank),input1(:,myrank),size1,primefactors,proclist,nprocs,myrank,1)
+  write(mpifileptr,*) "## call cooleytukey_outofplace_backward_mpi"
+  call ctdim(1)
+  call cooleytukey_outofplace_backward_mpi(zoutput1(:,myrank),input1(:,myrank),1,1,size1,primefactors,proclist,nprocs,myrank,1)
+  input1(:,myrank)=input1(:,myrank)/size1
 
   if (myrank.eq.1) then
-     write(mpifileptr,'(A50,$)') "## done cooleytukey_outofplace_inverse_mpi  "
+     write(mpifileptr,'(A50,$)') "## done cooleytukey_outofplace_backward_mpi  "
      call system('date')
   else
-     write(mpifileptr,*) "## done cooleytukey_outofplace_inverse_mpi  "
+     write(mpifileptr,*) "## done cooleytukey_outofplace_backward_mpi  "
   endif
 
   call mympigather(input1(:,myrank),input0,size1)
@@ -122,3 +125,13 @@ call getallprimefactors(nprocs,numfactors,primefactors)
 
 end subroutine mpi_core
 
+
+subroutine myzfft3d(in,out,dim1,dim2,dim3,howmany)
+  implicit none
+  integer, intent(in) :: dim1,dim2,dim3,howmany
+  complex*16, intent(in) :: in(dim1,dim2,dim3,howmany)
+  complex*16, intent(out) :: out(dim1,dim2,dim3,howmany)
+  print *, "myzfft3d not programmed mpi_test"; call mpistop()
+  out(:,:,:,:)=in(:,:,:,:)  !! avoid warn unused
+end subroutine myzfft3d
+  
