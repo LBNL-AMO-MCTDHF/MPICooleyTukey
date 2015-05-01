@@ -1,9 +1,9 @@
 
 
-module ct_fileptrmod
+module fileptrmod
   implicit none
   integer :: mpifileptr = 6
-end module ct_fileptrmod
+end module fileptrmod
 
 module ct_mpimod
   implicit none
@@ -13,31 +13,11 @@ module ct_mpimod
   integer :: CT_GROUP_WORLD = -1
 end module ct_mpimod
 
-module ct_options
-  integer :: ct_dimensionality=3
-  integer :: ct_paropt=1
-end module ct_options
 
-
-subroutine ctdim(in_ctdim)
-  use ct_fileptrmod
+subroutine ctset()
+  use fileptrmod
   use ct_mpimod
-  use ct_options
   implicit none
-  integer, intent(in) :: in_ctdim
-  if (in_ctdim.ne.1.and.in_ctdim.ne.3) then 
-     write(mpifileptr,*) "CTDIM NOT SUPPORTED", in_ctdim; call mpistop()
-  endif
-  ct_dimensionality=in_ctdim
-end subroutine ctdim
-
-subroutine ctset(in_ctparopt)
-  use ct_fileptrmod
-  use ct_mpimod
-  use ct_options
-  implicit none
-  integer, intent(in) :: in_ctparopt
-  ct_paropt=in_ctparopt
   call getmyranknprocs(myrank,nprocs)
   call getworldcommgroup(CT_COMM_WORLD,CT_GROUP_WORLD)
   if (myrank.eq.1) then
@@ -49,8 +29,9 @@ subroutine ctset(in_ctparopt)
 end subroutine ctset
 
 
+
 subroutine twiddlemult_mpi(blocksize,in,out,dim1,numfactored,myfactor,localnumprocs,ctrank,howmany)
-  use ct_fileptrmod
+  use fileptrmod
   use ct_mpimod   !! nprocs check
   implicit none
   integer, intent(in) :: blocksize,dim1,howmany,localnumprocs,numfactored,myfactor,ctrank
@@ -65,7 +46,7 @@ subroutine twiddlemult_mpi(blocksize,in,out,dim1,numfactored,myfactor,localnumpr
 
   call gettwiddlesmall(twiddle1(:,:),dim1*numfactored,localnumprocs)
 
-  tt1(:)=twiddle1(:,myfactor)**(ctrank-1)
+  tt1(:)=twiddle1(:,myfactor)**(ctrank-1)   !!! ???? CRUX 
   do ii=1,howmany
      do n1=1,dim1
         out(:,n1,ii) = in(:,n1,ii) * tt1(n1)
@@ -76,8 +57,6 @@ end subroutine twiddlemult_mpi
 
 
 subroutine myzfft1d_slowindex_mpi(in,out,localnumprocs,ctrank,proclist,totsize)
-  use ct_fileptrmod
-  use ct_options
   implicit none
   integer, intent(in) :: totsize,localnumprocs,ctrank,proclist(localnumprocs)
   complex*16, intent(in) :: in(totsize)
@@ -85,22 +64,11 @@ subroutine myzfft1d_slowindex_mpi(in,out,localnumprocs,ctrank,proclist,totsize)
   complex*16 :: fouriermatrix(localnumprocs,localnumprocs),twiddle(localnumprocs)
   integer :: ii
 
-  print *, "in slowindex", proclist
-
   call gettwiddlesmall(twiddle,localnumprocs,1)
   do ii=1,localnumprocs
      fouriermatrix(:,ii)=twiddle(:)**(ii-1)
   enddo
-  select case (ct_paropt)
-  case(0)
-  call simple_circ(in,out,fouriermatrix,totsize,ctrank,localnumprocs,proclist)
-  case(1)
   call simple_summa(in,out,fouriermatrix,totsize,ctrank,localnumprocs,proclist)
-  case default
-     write(mpifileptr,*) "ct_paropt not recognized",ct_paropt; call mpistop()
-  end select
-
-print *, "done slowindex"
 
 end subroutine myzfft1d_slowindex_mpi
 
@@ -108,7 +76,7 @@ end subroutine myzfft1d_slowindex_mpi
 
 
 subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,proclist)
-  use ct_fileptrmod
+  use fileptrmod
   use ct_mpimod
   implicit none
   integer, intent(in) :: howmany,ctrank,localnumprocs,proclist(localnumprocs)
@@ -116,20 +84,12 @@ subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,proclist)
   complex*16, intent(out) :: out(howmany)
   complex*16 :: work2(howmany),work(howmany)
   integer :: ibox,jbox,deltabox,nnn,CT_GROUP_LOCAL,CT_COMM_LOCAL,ierr,procshift(localnumprocs)
-  
-  ierr=798
+
   if (localnumprocs.gt.nprocs.or.localnumprocs.le.1.or.ctrank.lt.1.or.ctrank.gt.localnumprocs) then
      write(mpifileptr,*) "local error", ctrank,localnumprocs,nprocs; call mpistop()
   endif
 
   procshift(:)=proclist(:)-1
-#ifndef MPIFLAG
-  if (ctrank.ne.1) then
-     write(mpifileptr,*) "Error non-mpi rank ne 1", ctrank; call mpistop()
-  endif
-  CT_GROUP_LOCAL=(-42)
-  CT_COMM_LOCAL=798
-#else
   call mpi_group_incl(CT_GROUP_WORLD,localnumprocs,procshift,CT_GROUP_LOCAL,ierr)
   if (ierr.ne.0) then
      write(mpifileptr,*) "Error group incl simple_circ",ierr; call mpistop()
@@ -138,7 +98,6 @@ subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,proclist)
   if (ierr.ne.0) then
      write(mpifileptr,*) "Error comm create simple_circ",ierr; call mpistop()
   endif
-#endif
 
   nnn=1
 
@@ -159,23 +118,24 @@ subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,proclist)
      endif
   enddo
 
-#ifdef MPIFLAG
+  ierr=798
   call mpi_comm_free(CT_COMM_LOCAL,ierr)
   if (ierr.ne.0) then
      write(mpifileptr,*) "Error comm destroy simple_circ",ierr; call mpistop()
   endif
+
+  ierr=798
   call mpi_group_free(CT_GROUP_LOCAL,ierr)
   if (ierr.ne.0) then
      write(mpifileptr,*) "Error group destroy simple_circ",ierr; call mpistop()
   endif
-#endif
 
 end subroutine simple_circ
 
 
 
 subroutine simple_summa(in, out,mat,howmany,ctrank,localnumprocs,proclist)
-  use ct_fileptrmod
+  use fileptrmod
   use ct_mpimod
   implicit none
   integer, intent(in) :: howmany,ctrank,localnumprocs,proclist(localnumprocs)
@@ -184,20 +144,11 @@ subroutine simple_summa(in, out,mat,howmany,ctrank,localnumprocs,proclist)
   complex*16 :: work(howmany)
   integer :: ibox,nnn,CT_GROUP_LOCAL,CT_COMM_LOCAL,ierr,procshift(localnumprocs)
 
-  ierr=(-798)
   if (localnumprocs.gt.nprocs.or.localnumprocs.le.1.or.ctrank.lt.1.or.ctrank.gt.localnumprocs) then
      write(mpifileptr,*) "local error", ctrank,localnumprocs,nprocs; call mpistop()
   endif
 
   procshift(:)=proclist(:)-1
-
-#ifndef MPIFLAG
-  if (ctrank.ne.1) then
-     write(mpifileptr,*) "Error non-mpi rank ne 1", ctrank; call mpistop()
-  endif
-  CT_GROUP_LOCAL=(-42)
-  CT_COMM_LOCAL=798
-#else
   call mpi_group_incl(CT_GROUP_WORLD,localnumprocs,procshift,CT_GROUP_LOCAL,ierr)
   if (ierr.ne.0) then
      write(mpifileptr,*) "Error group incl simple_summa",ierr; call mpistop()
@@ -206,7 +157,6 @@ subroutine simple_summa(in, out,mat,howmany,ctrank,localnumprocs,proclist)
   if (ierr.ne.0) then
      write(mpifileptr,*) "Error comm create simple_summa",ierr; call mpistop()
   endif
-#endif
 
   nnn=1
 
@@ -219,16 +169,17 @@ subroutine simple_summa(in, out,mat,howmany,ctrank,localnumprocs,proclist)
      out(:)=out(:)+work(:)*mat(ctrank,ibox)
   enddo
 
-#ifdef MPIFLAG
+  ierr=798
   call mpi_comm_free(CT_COMM_LOCAL,ierr)
   if (ierr.ne.0) then
      write(mpifileptr,*) "Error comm destroy simple_summa",ierr; call mpistop()
   endif
+
+  ierr=798
   call mpi_group_free(CT_GROUP_LOCAL,ierr)
   if (ierr.ne.0) then
      write(mpifileptr,*) "Error group destroy simple_summa",ierr; call mpistop()
   endif
-#endif
 
 end subroutine simple_summa
 
@@ -254,6 +205,7 @@ subroutine myzfft1d_slowindex_local(in,out,dim1,dim2,howmany)
 
 end subroutine myzfft1d_slowindex_local
   
+
 
 
 subroutine getprimefactor(dim,myfactor)
