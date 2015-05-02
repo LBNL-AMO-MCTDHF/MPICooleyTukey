@@ -214,7 +214,7 @@ end module ct_options
 module ct_primesetmod
   implicit none
   integer, allocatable :: CT_COMM_EACH(:,:),CT_GROUP_EACH(:,:),CT_PROCSET(:,:,:)
-  integer :: CT_MYLOC(128)
+  integer :: CT_MYLOC(128),CT_MYRANK(128)
   integer :: ct_called=0
   integer :: ct_numprimes = (-1)
   integer :: ct_maxprime = (-1)
@@ -296,6 +296,10 @@ subroutine myzfft1d_slowindex_mpi(in,out,ctrank,totsize,rdd)
   complex*16, intent(out) :: out(totsize)
   complex*16 :: fouriermatrix(ct_pf(rdd),ct_pf(rdd)),twiddle(ct_pf(rdd))
   integer :: ii
+
+  if (ctrank.ne.CT_MYRANK(rdd)) then
+     print *, "ct_myrank error",ctrank,ct_myrank(rdd),rdd,myrank; call mpistop()
+  endif
 
   call gettwiddlesmall(twiddle,ct_pf(rdd),1)
   do ii=1,ct_pf(rdd)
@@ -612,6 +616,7 @@ subroutine ct_construct()
   thisfileptr=6
 
   CT_MYLOC = (-99)
+  CT_MYRANK = (-99)
 
   do iprime=1,ct_numprimes
      qqtop(:)=1
@@ -652,6 +657,7 @@ subroutine ct_construct()
                  print *, "ERROR MYLOC"; call mpistop()
               endif
               CT_MYLOC(iprime)=icomm
+              CT_MYRANK(iprime)=ii
            endif
         enddo
 
