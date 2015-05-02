@@ -267,7 +267,7 @@ recursive subroutine cooleytukey_outofplace_mpi0(in,outtrans,dim2,dim3,dim1,pf,&
 
   call myzfft1d_slowindex_mpi(in,tempout,dim1*dim2*dim3*howmany,recursiondepth)
 
-  call twiddlemult_mpi(dim2*dim3,tempout,outtemp,dim1,othersize,newrank,pf(1),ctrank,howmany,recursiondepth)
+  call twiddlemult_mpi(dim2*dim3,tempout,outtemp,dim1,howmany,recursiondepth)
 
   if (othersize.eq.1) then
      select case(ct_dimensionality)
@@ -327,7 +327,7 @@ recursive subroutine cooleytukey_outofplaceinput_mpi0(intranspose,out,dim2,dim3,
      call cooleytukey_outofplaceinput_mpi0(intranspose,temptrans,dim2,dim3,dim1,newpf,newproclist,othersize,newrank,howmany,newdepth)
   endif
 
-  call twiddlemult_mpi(dim2*dim3,temptrans,outtrans,dim1,othersize,newrank,pf(1),ctrank,howmany,recursiondepth)
+  call twiddlemult_mpi(dim2*dim3,temptrans,outtrans,dim1,howmany,recursiondepth)
   call myzfft1d_slowindex_mpi(outtrans,out,dim1*dim2*dim3*howmany,recursiondepth)
 
 end subroutine cooleytukey_outofplaceinput_mpi0

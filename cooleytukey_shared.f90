@@ -260,46 +260,20 @@ subroutine ct_init(in_ctparopt,in_mpifileptr)
 end subroutine ct_init
 
 
-subroutine twiddlemult_mpi(blocksize,in,out,dim1,numfactored,myfactor,localnumprocs,ctrank,howmany,rdd)
+subroutine twiddlemult_mpi(blocksize,in,out,dim1,howmany,rdd)
   use ct_fileptrmod
   use ct_mpimod   !! nprocs check
   use ct_primesetmod
   implicit none
-  integer, intent(in) :: blocksize,dim1,howmany,localnumprocs,numfactored,myfactor,ctrank,rdd
+  integer, intent(in) :: blocksize,dim1,howmany,rdd
   complex*16, intent(in) :: in(blocksize,dim1,howmany)
   complex*16, intent(out) :: out(blocksize,dim1,howmany)
-  complex*16 :: twiddle1(dim1,numfactored),tt1(dim1)
+  complex*16 :: twiddle1(dim1,ct_maxposition(rdd)),tt1(dim1)
   integer :: ii,n1
 
-  if (myfactor.lt.0.or.myfactor.gt.numfactored) then
-     write (mpifileptr,*) "bad factor",myfactor,numfactored; call mpistop()
-  endif
+  call gettwiddlesmall(twiddle1(:,:),dim1*ct_maxposition(rdd),ct_pf(rdd))
 
-  do ii=1,myrank
-     call mpibarrier()
-  enddo
-  n1=0
-  if (myfactor.ne.CT_MYposition(rdd).or.ctrank.ne.CT_MYRANK(rdd).or.localnumprocs.ne.CT_PF(rdd)&
-       .or.numfactored.ne.ct_maxposition(rdd)) then
-     print *, "CHECKME TWIDDLE ERROR",myrank,rdd
-     print *, myfactor, CT_MYposition(rdd)
-     print *, numfactored,ct_maxposition(rdd)
-     print *, ctrank,ct_myrank(rdd)
-     print *, localnumprocs,ct_pf(rdd)
-     n1=1
-  endif
-  do ii=myrank,nprocs
-     call mpibarrier()
-  enddo
-
-  if (n1.ne.0) then
-     call mpistop()
-  endif
-  
-
-  call gettwiddlesmall(twiddle1(:,:),dim1*numfactored,localnumprocs)
-
-  tt1(:)=twiddle1(:,myfactor)**(ctrank-1)
+  tt1(:)=twiddle1(:,ct_myposition(rdd))**(ct_myrank(rdd)-1)
   do ii=1,howmany
      do n1=1,dim1
         out(:,n1,ii) = in(:,n1,ii) * tt1(n1)
