@@ -111,7 +111,7 @@ end subroutine mpistop
 
 
 
-subroutine mympibcast(input, source, isize,MPI_COMM_LOCAL)
+subroutine mympicomplexbcast_local(input, source, isize,MPI_COMM_LOCAL)
   use mpimod
   implicit none
   integer,intent(in) :: isize,source,MPI_COMM_LOCAL
@@ -125,10 +125,10 @@ subroutine mympibcast(input, source, isize,MPI_COMM_LOCAL)
      write(mpifileptr,*) "ERR mympibcast"; call mpistop()
   endif
   call system_clock(mpibtime);  mpitime=mpitime+mpibtime-mpiatime
-end subroutine mympibcast
+end subroutine mympicomplexbcast_local
 
 
-subroutine mympisendrecv(sendbuf, recvbuf, dest, source, tag, isize, MPI_COMM_LOCAL)
+subroutine mympisendrecv_complex_local(sendbuf, recvbuf, dest, source, tag, isize, MPI_COMM_LOCAL)
   use mpimod
   implicit none
   integer, intent(in) :: dest,source,tag,isize,MPI_COMM_LOCAL
@@ -145,7 +145,7 @@ subroutine mympisendrecv(sendbuf, recvbuf, dest, source, tag, isize, MPI_COMM_LO
      write(mpifileptr,*) "ERR mympisendrecv",ierr; call mpistop()
   endif
   call system_clock(mpibtime);  mpitime=mpitime+mpibtime-mpiatime
-end subroutine mympisendrecv
+end subroutine mympisendrecv_complex_local
 
 
 

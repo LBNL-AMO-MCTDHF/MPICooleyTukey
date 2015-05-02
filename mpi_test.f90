@@ -5,7 +5,6 @@ program mpi_test
 
   call mpistart()
   call getmyranknprocs(myrank,nprocs)
-  call ctset(1)
 
   if (myrank.eq.1) then
      mpifileptr=6
@@ -13,6 +12,8 @@ program mpi_test
      mpifileptr=987
      open(mpifileptr,file="/dev/null", status="unknown")
   endif
+
+  call ct_init(1, mpifileptr)
 
   call mpi_core(myrank,nprocs,mpifileptr)
 end program mpi_test
