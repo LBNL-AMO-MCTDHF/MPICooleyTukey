@@ -1,3 +1,6 @@
+
+#define MAXPRIMES 7
+
 !!$
 !!$Apache License
 !!$                           Version 2.0, January 2004
@@ -214,12 +217,12 @@ end module ct_options
 module ct_primesetmod
   implicit none
   integer, allocatable :: CT_COMM_EACH(:,:),CT_GROUP_EACH(:,:),CT_PROCSET(:,:,:)
-  integer :: CT_MYLOC(128),CT_MYRANK(128),CT_MYPOSITION(128)
+  integer :: CT_MYLOC(MAXPRIMES),CT_MYRANK(MAXPRIMES),CT_MYPOSITION(MAXPRIMES)
   integer :: ct_called=0
   integer :: ct_numprimes = (-1)
   integer :: ct_maxprime = (-1)
   integer :: ct_minprime = (-1)
-  integer :: ct_pf(128)=1,ct_maxposition(128)=1
+  integer :: ct_pf(MAXPRIMES)=1,ct_maxposition(MAXPRIMES)=1
 
 end module ct_primesetmod
 
@@ -488,10 +491,10 @@ subroutine getprimefactor(dim,myfactor)
 end subroutine getprimefactor
 
 
-subroutine getallprimefactors(dim,numfactors,allfactors)
+subroutine getallprimefactors(dim,factormax,numfactors,allfactors)
   implicit none
-  integer, intent(in) :: dim
-  integer, intent(out) :: allfactors(7),numfactors
+  integer, intent(in) :: dim,factormax
+  integer, intent(out) :: allfactors(factormax),numfactors
   integer :: thisdim,flag
 
   allfactors(:)=1
@@ -499,8 +502,8 @@ subroutine getallprimefactors(dim,numfactors,allfactors)
   thisdim=dim
   flag=0
 
-798 if (numfactors.eq.7) then
-     allfactors(7)=thisdim
+798 if (numfactors.eq.factormax) then
+     allfactors(factormax)=thisdim
      return
   else
      call getprimefactor(thisdim,allfactors(numfactors))
@@ -546,10 +549,8 @@ subroutine ct_getprimeset()
   endif
   ct_called=1
 
-  call getallprimefactors(nprocs,ct_numprimes,ct_pf)
-  if (ct_numprimes.gt.7) then
-     write(mpifileptr,*) "Check dimensions ... ct_numprimes>7."; call mpistop()
-  endif
+  call getallprimefactors(nprocs,MAXPRIMES,ct_numprimes,ct_pf)
+
   ct_maxprime=1; ct_minprime=32767
   do ii=1,ct_numprimes
      if (ct_pf(ii).gt.ct_maxprime) then
@@ -601,6 +602,10 @@ subroutine ct_construct()
        qqtop(7),icomm
   integer, target :: qq(7),pp0(7),pp1(7)
   integer, pointer :: qq1,qq2,qq3,qq4,qq5,qq6,qq7
+
+  if (ct_numprimes.gt.7) then
+     print *, "REDIM CONSTRUCT",ct_numprimes,7; call mpistop()
+  endif
 
   proc_check=ct_pf(1)*ct_pf(2)*ct_pf(3)*ct_pf(4)*ct_pf(5)*ct_pf(6)*ct_pf(7)
   if (proc_check.ne.nprocs) then

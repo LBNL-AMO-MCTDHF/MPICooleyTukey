@@ -34,7 +34,7 @@ subroutine mpi_core(myrank,nprocs,mpifileptr)
        input1(size1,nprocs), & !!TEMP output(size1*nprocs),
        input0(size1*nprocs)  !!,output1(size1,nprocs)
   real*8 :: realarray(size1*nprocs),randomamount
-  integer :: primefactors(7),numfactors,i
+  integer :: primefactors(128),numfactors,i
 
   size=nprocs*size1
   do i=1,size
@@ -53,7 +53,7 @@ subroutine mpi_core(myrank,nprocs,mpifileptr)
 
 !!TEMP    numfactors=1; primefactors(:)=1; primefactors(1)=nprocs
 
-call getallprimefactors(nprocs,numfactors,primefactors)
+call getallprimefactors(nprocs,128,numfactors,primefactors)
 
   write(mpifileptr,*) "     Prime factors of ",nprocs," are"
   write(mpifileptr,*) primefactors(1:numfactors)

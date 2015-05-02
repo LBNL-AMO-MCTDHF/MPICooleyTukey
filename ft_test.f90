@@ -15,7 +15,7 @@ program ft_test
   complex*16 :: input(size), output(size),zoutput1(size),&
        input1(size) !!,output1(size)
   real*8 :: realarray(size),randomamount
-  integer :: primefactors(7),numfactors,i
+  integer :: primefactors(128),numfactors,i
 
   do i=1,size
      input(i)=exp(-249*(i-(size+1)*0.5d0)**2/size**2)  * (-1)**i
@@ -30,7 +30,7 @@ program ft_test
   input(:)=input(:)+realarray(:)**3 * (0d0,4d0) * randomamount
 
   print *, "Go ft_test. Dimensions are ",size1,size2
-  call getallprimefactors(size2,numfactors,primefactors)
+  call getallprimefactors(size2,128,numfactors,primefactors)
   print *, "     Prime factors of ",size2," are"
   print *, primefactors(1:numfactors)
   print *

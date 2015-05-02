@@ -248,18 +248,11 @@ recursive subroutine cooleytukey_outofplace_mpi0(in,outtrans,dim2,dim3,dim1,pf,h
   complex*16 ::  tempout(dim2,dim3,dim1,howmany),  outtemp(dim2,dim3,dim1,howmany)
   integer ::  newpf(MAXPRIMES),newdepth
 
-!!$  othersize=localnprocs/pf(1)
-
-  newdepth=recursiondepth+1
-
   call myzfft1d_slowindex_mpi(in,tempout,dim1*dim2*dim3*howmany,recursiondepth)
 
   call twiddlemult_mpi(dim2*dim3,tempout,outtemp,dim1,howmany,recursiondepth)
 
-!!$  if (othersize.eq.1) then
-
   if (recursiondepth.eq.ct_numprimes) then
-
      select case(ct_dimensionality)
      case(1)
         call myzfft1d_slowindex_local(outtemp,outtrans,dim2*dim3,dim1,howmany)
@@ -270,6 +263,7 @@ recursive subroutine cooleytukey_outofplace_mpi0(in,outtrans,dim2,dim3,dim1,pf,h
      end select
   else
      newpf(1:MAXPRIMES-1)=pf(2:MAXPRIMES); newpf(MAXPRIMES)=1
+     newdepth=recursiondepth+1
      call cooleytukey_outofplace_mpi0(outtemp,outtrans,dim2,dim3,dim1,newpf,howmany,newdepth)
   endif
 
@@ -287,14 +281,7 @@ recursive subroutine cooleytukey_outofplaceinput_mpi0(intranspose,out,dim2,dim3,
   complex*16 ::   temptrans(dim2,dim3,dim1,howmany),outtrans(dim2,dim3,dim1,howmany)
   integer ::  newpf(MAXPRIMES),newdepth
 
-!!$  othersize=localnprocs/pf(1)
-
-  newdepth=recursiondepth+1
-
-!!$  if (othersize.eq.1) then
-
   if (recursiondepth.eq.ct_numprimes) then
-
      select case(ct_dimensionality)
      case(1)
         call myzfft1d_slowindex_local(intranspose,temptrans,dim2*dim3,dim1,howmany)
@@ -305,6 +292,7 @@ recursive subroutine cooleytukey_outofplaceinput_mpi0(intranspose,out,dim2,dim3,
      end select
   else
      newpf(1:MAXPRIMES-1)=pf(2:MAXPRIMES); newpf(MAXPRIMES)=1
+     newdepth=recursiondepth+1
      call cooleytukey_outofplaceinput_mpi0(intranspose,temptrans,dim2,dim3,dim1,newpf,howmany,newdepth)
   endif
 
