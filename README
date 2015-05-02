@@ -18,19 +18,210 @@
  ## IT WORKS (v8.00)
  ##
  ##			  
-1c1
-<  Go ft_test. Dimensions are            7          48
----
->  Go mpi_test. Dimensions are            7          48
-6,10c6,8
-<                                      ## call ft.  Sat May  2 10:52:45 PDT 2015
-<                                      ## done ft   Sat May  2 10:52:45 PDT 2015
-<                   ## call cooleytukey_outofplace  Sat May  2 10:52:45 PDT 2015
-<  ## call cooleytukey_outofplace_inverse
-<           ## done cooleytukey_outofplace_inverse  Sat May  2 10:52:45 PDT 2015
----
->               ## call cooleytukey_outofplace_mpi  Sat May  2 10:52:45 PDT 2015
->  ## call cooleytukey_outofplace_backward_mpi
->      ## done cooleytukey_outofplace_backward_mpi  Sat May  2 10:52:45 PDT 2015
-1022a1021,1069
->  OK MPI_TEST DONE!
+mpi_test.out follows
+ 
+ Go CT_INIT
+    CT_MAXPRIME IS            3
+     CT_PRIMEFACTORS ARE
+              2           2           2           2           3
+ Calling ct_construct...
+ recursion error proclist slowindex 
+          10          34
+           9          10
+ recursion error proclist slowindex 
+          11          35
+          11          12
+ recursion error proclist slowindex 
+          12          36
+          11          12
+ recursion error proclist slowindex 
+          13          37
+          13          14
+ recursion error proclist slowindex 
+          14          38
+          13          14
+ recursion error proclist slowindex 
+          15          39
+          15          16
+ recursion error proclist slowindex 
+          16          40
+          15          16
+    ....Called ct_construct.
+ 
+ Go mpi_test. Dimensions are            7          48
+      Prime factors of           48  are
+           2           2           2           2           3
+ 
+ randomamount is   1.000000000000000E-002
+              ## call cooleytukey_outofplace_mpi   recursion error proclist slowindex 
+           2          26
+           1           2
+ recursion error proclist slowindex 
+           3          27
+           3           4
+ recursion error proclist slowindex 
+           4          28
+           3           4
+ recursion error proclist slowindex 
+           5          29
+           5           6
+ recursion error proclist slowindex 
+           6          30
+           5           6
+ recursion error proclist slowindex 
+           7          31
+           7           8
+ recursion error proclist slowindex 
+           8          32
+           7           8
+ recursion error proclist slowindex 
+           9          33
+           9          10
+ recursion error proclist slowindex 
+           7          31
+          31          32
+ recursion error proclist slowindex 
+          21          45
+          45          46
+ recursion error proclist slowindex 
+           8          32
+          31          32
+ recursion error proclist slowindex 
+          22          46
+          45          46
+ recursion error proclist slowindex 
+          19          43
+          19          20
+ recursion error proclist slowindex 
+          23          47
+          47          48
+ recursion error proclist slowindex 
+          20          44
+          19          20
+ recursion error proclist slowindex 
+          24          48
+          47          48
+ recursion error proclist slowindex 
+          21          45
+          21          22
+ recursion error proclist slowindex 
+           9          33
+          33          34
+ recursion error proclist slowindex 
+          22          46
+          21          22
+ recursion error proclist slowindex 
+          10          34
+          33          34
+ recursion error proclist slowindex 
+          23          47
+          23          24
+ recursion error proclist slowindex 
+          11          35
+          35          36
+ recursion error proclist slowindex 
+          24          48
+          23          24
+ recursion error proclist slowindex 
+          13          37
+          37          38
+ recursion error proclist slowindex 
+           1          25
+          25          26
+ recursion error proclist slowindex 
+          14          38
+          37          38
+ recursion error proclist slowindex 
+           3          27
+          27          28
+ recursion error proclist slowindex 
+          15          39
+          39          40
+ recursion error proclist slowindex 
+           5          29
+          29          30
+ recursion error proclist slowindex 
+          16          40
+          39          40
+ recursion error proclist slowindex 
+          17          41
+          17          18
+ recursion error proclist slowindex 
+          17          41
+          41          42
+ recursion error proclist slowindex 
+          18          42
+          17          18
+ recursion error proclist slowindex 
+          18          42
+          41          42
+ recursion error proclist slowindex 
+           2          26
+          25          26
+ recursion error proclist slowindex 
+          19          43
+          43          44
+ recursion error proclist slowindex 
+           4          28
+          27          28
+ recursion error proclist slowindex 
+          20          44
+          43          44
+ recursion error proclist slowindex 
+           6          30
+          29          30
+ recursion error proclist slowindex 
+          12          36
+          35          36
+Sat May  2 11:16:26 PDT 2015
+ recursion error proclist slowindex 
+           1          25
+           1           2
+ MPI STOP           23
+ MPI STOP           17
+ MPI STOP            3
+ MPI STOP            5
+ MPI STOP           25
+ MPI STOP            1
+ MPI STOP           29
+ MPI STOP           19
+ MPI STOP           31
+ MPI STOP            9
+ MPI STOP           11
+ MPI STOP           15
+ MPI STOP            7
+ MPI STOP           27
+ MPI STOP           13
+ MPI STOP           21
+ MPI STOP            2
+ MPI STOP           12
+ MPI STOP            6
+ MPI STOP           24
+ MPI STOP           16
+ MPI STOP           18
+ MPI STOP            8
+ MPI STOP           10
+ MPI STOP           14
+ MPI STOP           32
+ MPI STOP           28
+ MPI STOP           26
+ MPI STOP           22
+ MPI STOP           30
+ MPI STOP           20
+ MPI STOP            4
+ MPI STOP           44
+ MPI STOP           36
+ MPI STOP           33
+ MPI STOP           42
+ MPI STOP           35
+ MPI STOP           39
+ MPI STOP           46
+ MPI STOP           37
+ MPI STOP           40
+ MPI STOP           45
+ MPI STOP           41
+ MPI STOP           43
+ MPI STOP           34
+ MPI STOP           47
+ MPI STOP           38
+ MPI STOP           48

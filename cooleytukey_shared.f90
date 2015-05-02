@@ -254,7 +254,7 @@ subroutine ct_init(in_ctparopt,in_mpifileptr)
      open(mpifileptr,file="/dev/null", status="unknown")
   endif
 
-!!$ADD  call ct_getprimeset()
+ call ct_getprimeset()
 
 end subroutine ct_init
 
@@ -288,7 +288,8 @@ end subroutine twiddlemult_mpi
 subroutine myzfft1d_slowindex_mpi(in,out,localnumprocs,ctrank,proclist,totsize,recursiondepth)
   use ct_fileptrmod
   use ct_options
-!!$ADD  use ct_primesetmod
+  use ct_primesetmod
+  use ct_mpimod !! temp? check myrank
   implicit none
   integer, intent(in) :: totsize,localnumprocs,ctrank,proclist(localnumprocs),recursiondepth
   complex*16, intent(in) :: in(totsize)
@@ -298,24 +299,24 @@ subroutine myzfft1d_slowindex_mpi(in,out,localnumprocs,ctrank,proclist,totsize,r
 
 
 !ADD
-!  if (localnumprocs.ne.ct_pf(recursiondepth)) then
-!     write(*,*) "slowindex recursion error"
-!     write(*,*) ctrank,localnumprocs,recursiondepth,ct_pf(recursiondepth)
-!     call mpistop()
-!  endif
+  if (localnumprocs.ne.ct_pf(recursiondepth)) then
+     write(*,*) "slowindex recursion error"
+     write(*,*) ctrank,localnumprocs,recursiondepth,ct_pf(recursiondepth)
+     call mpistop()
+  endif
 
-!  do ii=1,localnumprocs
-!     if (ctset(ii).ne.CT_PROCSET(ii,CT_MYLOC(recursiondepth),recursiondepth)) then
-!        print *, "recursion error ctset slowindex "
-!        print *, ctset(1:localnumprocs)
-!        print *, CT_PROCSET(1:localnumprocs,CT_MYLOC(recursiondepth),recursiondepth)
-!        call mpistop()
-!     endif
-!  enddo
+  do ii=1,localnumprocs
+     if (proclist(ii).ne.CT_PROCSET(ii,CT_MYLOC(recursiondepth),recursiondepth)) then
+        print *, "recursion error proclist slowindex "
+        print *, proclist(1:localnumprocs)
+        print *, CT_PROCSET(1:localnumprocs,CT_MYLOC(recursiondepth),recursiondepth)
+        call mpistop()
+     endif
+  enddo
 
-!  if (ctset(ctrank).ne.myrank) then
-!     print *, "ctset error rank", ctset(ctrank),myrank; call mpistop()
-!  endif
+  if (proclist(ctrank).ne.myrank) then
+     print *, "proclist error rank", proclist(ctrank),myrank; call mpistop()
+  endif
 
 
   call gettwiddlesmall(twiddle,localnumprocs,1)
@@ -338,6 +339,7 @@ end subroutine myzfft1d_slowindex_mpi
 subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,proclist,recursiondepth)
   use ct_fileptrmod
   use ct_mpimod
+  use ct_primesetmod
   implicit none
   integer, intent(in) :: howmany,ctrank,localnumprocs,proclist(localnumprocs),recursiondepth
   complex*16, intent(in) :: in(howmany), mat(localnumprocs,localnumprocs)
@@ -351,14 +353,14 @@ subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,proclist,recursi
   thisfileptr=6
 
 !ADD
-!  if (recursiondepth.lt.1.or.recursiondepth.gt.ct_numprimes) then
-!     write(*,*) "recursion depth error circ",recursiondepth,ct_numprimes; call mpistop()
-!  endif
-!  if (localnumprocs.ne.ct_pf(recursiondepth)) then
-!     write(*,*) "circ recursion error"
-!     write(*,*) ctrank,localnumprocs,recursiondepth,ct_pf(recursiondepth)
-!     call mpistop()
-!  endif
+  if (recursiondepth.lt.1.or.recursiondepth.gt.ct_numprimes) then
+     write(*,*) "recursion depth error circ",recursiondepth,ct_numprimes; call mpistop()
+  endif
+  if (localnumprocs.ne.ct_pf(recursiondepth)) then
+     write(*,*) "circ recursion error"
+     write(*,*) ctrank,localnumprocs,recursiondepth,ct_pf(recursiondepth)
+     call mpistop()
+  endif
 
 #ifndef MPIFLAG
   if (ctrank.ne.1) then
@@ -423,6 +425,7 @@ end subroutine simple_circ
 subroutine simple_summa(in, out,mat,howmany,ctrank,localnumprocs,proclist,recursiondepth)
   use ct_fileptrmod
   use ct_mpimod
+  use ct_primesetmod
   implicit none
   integer, intent(in) :: howmany,ctrank,localnumprocs,proclist(localnumprocs),recursiondepth
   complex*16, intent(in) :: in(howmany), mat(localnumprocs,localnumprocs)
@@ -436,14 +439,14 @@ subroutine simple_summa(in, out,mat,howmany,ctrank,localnumprocs,proclist,recurs
   thisfileptr=6
 
 !ADD
-!  if (recursiondepth.lt.1.or.recursiondepth.gt.ct_numprimes) then
-!     write(*,*) "recursion depth error circ",recursiondepth,ct_numprimes; call mpistop()
-!  endif
-!  if (localnumprocs.ne.ct_pf(recursiondepth)) then
-!     write(*,*) "circ recursion error"
-!     write(*,*) ctrank,localnumprocs,recursiondepth,ct_pf(recursiondepth)
-!     call mpistop()
-!  endif
+  if (recursiondepth.lt.1.or.recursiondepth.gt.ct_numprimes) then
+     write(*,*) "recursion depth error circ",recursiondepth,ct_numprimes; call mpistop()
+  endif
+  if (localnumprocs.ne.ct_pf(recursiondepth)) then
+     write(*,*) "circ recursion error"
+     write(*,*) ctrank,localnumprocs,recursiondepth,ct_pf(recursiondepth)
+     call mpistop()
+  endif
 
 #ifndef MPIFLAG
   if (ctrank.ne.1) then
@@ -644,11 +647,11 @@ subroutine ct_construct()
   use ct_primesetmod
   implicit none
 #ifdef MPIFLAG
-  integer :: thisfileptr,procshift(nprocs),ierr,iprime,pp0(ct_numprimes),pp1(ct_numprimes), &
+  integer :: thisfileptr,procshift(nprocs),ierr,iprime,&
        allprocs0(nprocs), proc_check, ii, &
        allprocs(ct_pf(1),ct_pf(2),ct_pf(3),ct_pf(4),ct_pf(5),ct_pf(6),ct_pf(7)),&
-       qqtop(ct_numprimes),icomm
-  integer, target :: qq(128)
+       qqtop(7),icomm
+  integer, target :: qq(7),pp0(7),pp1(7)
   integer, pointer :: qq1,qq2,qq3,qq4,qq5,qq6,qq7
 
   proc_check=ct_pf(1)*ct_pf(2)*ct_pf(3)*ct_pf(4)*ct_pf(5)*ct_pf(6)*ct_pf(7)
@@ -670,10 +673,11 @@ subroutine ct_construct()
   CT_MYLOC = (-99)
 
   do iprime=1,ct_numprimes
+     qqtop(:)=1
      qqtop(1:ct_numprimes)=ct_pf(1:ct_numprimes)
      qqtop(iprime)=1
      icomm=0
-     
+
      do qq1=1,qqtop(1)
      do qq2=1,qqtop(2)
      do qq3=1,qqtop(3)
@@ -695,6 +699,10 @@ subroutine ct_construct()
         CT_PROCSET(1:ct_pf(iprime),icomm,iprime)=RESHAPE( &
              allprocs(pp0(1):pp1(1), pp0(2):pp1(2), pp0(3):pp1(3), pp0(4):pp1(4), &
              pp0(5):pp1(5), pp0(6):pp1(6), pp0(7):pp1(7)),(/ct_pf(iprime)/))
+!        if (myrank.eq.1) then
+!           print *, "PSET",icomm,iprime
+!           print *, "    ",CT_PROCSET(1:ct_pf(iprime),icomm,iprime)
+!        endif
 
         do ii=1,ct_pf(iprime)
            if (CT_PROCSET(ii,icomm,iprime).eq.myrank) then
