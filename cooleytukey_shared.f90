@@ -207,11 +207,11 @@ module ct_mpimod
   integer :: CT_GROUP_WORLD = -1
 end module ct_mpimod
 
+
 module ct_options
   integer :: ct_dimensionality=3
   integer :: ct_paropt=1
 end module ct_options
-
 
 
 module ct_primesetmod
@@ -227,7 +227,6 @@ module ct_primesetmod
 end module ct_primesetmod
 
 
-
 subroutine ctdim(in_ctdim)
   use ct_fileptrmod
   use ct_mpimod
@@ -239,6 +238,7 @@ subroutine ctdim(in_ctdim)
   endif
   ct_dimensionality=in_ctdim
 end subroutine ctdim
+
 
 subroutine ct_init(in_ctparopt,in_mpifileptr)
   use ct_fileptrmod
@@ -289,7 +289,6 @@ subroutine myzfft1d_slowindex_mpi(in,out,totsize,rdd)
   use ct_fileptrmod
   use ct_options
   use ct_primesetmod
-  use ct_mpimod !! temp? check myrank
   implicit none
   integer, intent(in) :: totsize,rdd
   complex*16, intent(in) :: in(totsize)
