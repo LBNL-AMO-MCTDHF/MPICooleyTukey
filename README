@@ -31,14 +31,14 @@
 >  
 >  Go mpi_test. Dimensions are            7          48
 6,11c14,16
-<                                      ## call ft.  Sat May  2 11:28:20 PDT 2015
-<                                      ## done ft   Sat May  2 11:28:20 PDT 2015
-<                   ## call cooleytukey_outofplace  Sat May  2 11:28:20 PDT 2015
+<                                      ## call ft.  Sat May  2 11:35:32 PDT 2015
+<                                      ## done ft   Sat May  2 11:35:32 PDT 2015
+<                   ## call cooleytukey_outofplace  Sat May  2 11:35:32 PDT 2015
 <  ## call cooleytukey_outofplace_inverse
-<           ## done cooleytukey_outofplace_inverse  Sat May  2 11:28:20 PDT 2015
+<           ## done cooleytukey_outofplace_inverse  Sat May  2 11:35:32 PDT 2015
 <  ## ok
 ---
->               ## call cooleytukey_outofplace_mpi  Sat May  2 11:28:19 PDT 2015
+>               ## call cooleytukey_outofplace_mpi  Sat May  2 11:35:31 PDT 2015
 >  ## call cooleytukey_outofplace_backward_mpi
 >      ## done cooleytukey_outofplace_backward_mpi   ## ok
 1022a1028,1029

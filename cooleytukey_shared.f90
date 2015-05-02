@@ -335,6 +335,7 @@ subroutine myzfft1d_slowindex_mpi(in,out,localnumprocs,ctrank,proclist,totsize,r
 end subroutine myzfft1d_slowindex_mpi
 
 
+#define LOCALFLAG
 
 subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,proclist,recursiondepth)
   use ct_fileptrmod
@@ -347,7 +348,10 @@ subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,proclist,recursi
   integer :: thisfileptr
 #ifdef MPIFLAG
   complex*16 :: work2(howmany),work(howmany)
-  integer :: ibox,jbox,deltabox,nnn,CT_GROUP_LOCAL,CT_COMM_LOCAL,ierr,procshift(localnumprocs)
+  integer :: ibox,jbox,deltabox,nnn,ierr
+#ifdef LOCALFLAG
+  integer :: CT_GROUP_LOCAL,CT_COMM_LOCAL,procshift(localnumprocs)
+#endif
 #endif
 
   thisfileptr=6
@@ -380,6 +384,7 @@ subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,proclist,recursi
      write(thisfileptr,*) "local error", ctrank,localnumprocs,nprocs; call mpistop()
   endif
 
+#ifdef LOCALFLAG
   procshift(:)=proclist(:)-1
   call mpi_group_incl(CT_GROUP_WORLD,localnumprocs,procshift,CT_GROUP_LOCAL,ierr)
   if (ierr.ne.0) then
@@ -389,6 +394,7 @@ subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,proclist,recursi
   if (ierr.ne.0) then
      write(thisfileptr,*) "Error comm create simple_circ",ierr; call mpistop()
   endif
+#endif
 
   nnn=1
   out(:)=0
@@ -400,15 +406,20 @@ subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,proclist,recursi
      work(:)=in(:)*mat(ibox,ctrank)
 
      if (deltabox.ne.0) then
-        call mympisendrecv_complex_local(work(:),work2(:),ibox,jbox,deltabox,howmany,CT_COMM_LOCAL)
 
-!!$ADD   call mympisendrecv_complex_local(work(:),work2(:),ibox,jbox,deltabox,howmany,CT_COMM_EACH(CT_MYLOC(recursiondepth),recursiondepth))
+#ifdef LOCALFLAG
+        call mympisendrecv_complex_local(work(:),work2(:),ibox,jbox,deltabox,howmany,CT_COMM_LOCAL)
+#else
+        call mympisendrecv_complex_local(work(:),work2(:),ibox,jbox,deltabox,howmany,CT_COMM_EACH(CT_MYLOC(recursiondepth),recursiondepth))
+#endif
 
         out(:)=out(:)+work2(:)
      else
         out(:)=out(:)+work(:)
      endif
   enddo
+
+#ifdef LOCALFLAG
   call mpi_comm_free(CT_COMM_LOCAL,ierr)
   if (ierr.ne.0) then
      write(thisfileptr,*) "Error comm destroy simple_circ",ierr; call mpistop()
@@ -417,6 +428,8 @@ subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,proclist,recursi
   if (ierr.ne.0) then
      write(thisfileptr,*) "Error group destroy simple_circ",ierr; call mpistop()
   endif
+#endif
+
 #endif
 
 end subroutine simple_circ
@@ -433,7 +446,10 @@ subroutine simple_summa(in, out,mat,howmany,ctrank,localnumprocs,proclist,recurs
   integer :: thisfileptr
 #ifdef MPIFLAG
   complex*16 :: work(howmany)
-  integer :: ibox,nnn,CT_GROUP_LOCAL,CT_COMM_LOCAL,ierr,procshift(localnumprocs)
+  integer :: ibox,nnn,ierr
+#ifdef LOCALFLAG
+  integer :: CT_GROUP_LOCAL,CT_COMM_LOCAL,procshift(localnumprocs)
+#endif
 #endif
 
   thisfileptr=6
@@ -466,8 +482,8 @@ subroutine simple_summa(in, out,mat,howmany,ctrank,localnumprocs,proclist,recurs
      write(thisfileptr,*) "local error", ctrank,localnumprocs,nprocs; call mpistop()
   endif
 
+#ifdef LOCALFLAG
   procshift(:)=proclist(:)-1
-
   call mpi_group_incl(CT_GROUP_WORLD,localnumprocs,procshift,CT_GROUP_LOCAL,ierr)
   if (ierr.ne.0) then
      write(thisfileptr,*) "Error group incl simple_summa",ierr; call mpistop()
@@ -476,6 +492,7 @@ subroutine simple_summa(in, out,mat,howmany,ctrank,localnumprocs,proclist,recurs
   if (ierr.ne.0) then
      write(thisfileptr,*) "Error comm create simple_summa",ierr; call mpistop()
   endif
+#endif
 
   nnn=1
   out(:)=0d0
@@ -484,12 +501,17 @@ subroutine simple_summa(in, out,mat,howmany,ctrank,localnumprocs,proclist,recurs
      if (ctrank.eq.ibox) then
         work(:)=in(:)
      endif
-     call mympicomplexbcast_local(work(:),ibox,howmany,CT_COMM_LOCAL)
 
-!!$ADD     call mympicomplexbcast_local(work(:),ibox,howmany,CT_COMM_EACH(CT_MYLOC(recursiondepth),recursiondepth))
+#ifdef LOCALFLAG
+     call mympicomplexbcast_local(work(:),ibox,howmany,CT_COMM_LOCAL)
+#else
+     call mympicomplexbcast_local(work(:),ibox,howmany,CT_COMM_EACH(CT_MYLOC(recursiondepth),recursiondepth))
+#endif
 
      out(:)=out(:)+work(:)*mat(ctrank,ibox)
   enddo
+
+#ifdef LOCALFLAG
   call mpi_comm_free(CT_COMM_LOCAL,ierr)
   if (ierr.ne.0) then
      write(thisfileptr,*) "Error comm destroy simple_summa",ierr; call mpistop()
@@ -498,6 +520,8 @@ subroutine simple_summa(in, out,mat,howmany,ctrank,localnumprocs,proclist,recurs
   if (ierr.ne.0) then
      write(thisfileptr,*) "Error group destroy simple_summa",ierr; call mpistop()
   endif
+#endif
+
 #endif
 
 end subroutine simple_summa
@@ -664,8 +688,6 @@ subroutine ct_construct()
      allprocs0(ii)=ii
   enddo
 
-!!!  allprocs(:,:,:,:,:,:,:)=RESHAPE(allprocs0,(/ct_pf(1),ct_pf(2),ct_pf(3),ct_pf(4),ct_pf(5),ct_pf(6),ct_pf(7)/))
-  
   allprocs(:,:,:,:,:,:,:)=RESHAPE(allprocs0,(/ct_pf(7),ct_pf(6),ct_pf(5),ct_pf(4),ct_pf(3),ct_pf(2),ct_pf(1)/))
 
   qq1=>qq(1); qq2=>qq(2); qq3=>qq(3); qq4=>qq(4); qq5=>qq(5); 

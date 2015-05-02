@@ -90,6 +90,7 @@ subroutine mpistop()
   implicit none
   integer :: ierr
 
+  write(mpifileptr,*) "MPI STOP.... ",myrank
   if (mpifileptr.ne.6) then
      close(mpifileptr)
   endif
@@ -106,7 +107,6 @@ subroutine mpistop()
   endif
 !!$  call sleep(2)
 !!$  write(*,*) "MPI STOP ",myrank
-  write(mpifileptr,*) "MPI STOP ",myrank
   stop
 end subroutine mpistop
 
