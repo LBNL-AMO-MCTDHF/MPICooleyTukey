@@ -335,7 +335,7 @@ subroutine myzfft1d_slowindex_mpi(in,out,localnumprocs,ctrank,proclist,totsize,r
 end subroutine myzfft1d_slowindex_mpi
 
 
-#define LOCALFLAG
+#define LOCAxxxLFLAG
 
 subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,proclist,recursiondepth)
   use ct_fileptrmod

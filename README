@@ -30,16 +30,15 @@
 >     ....Called ct_construct.
 >  
 >  Go mpi_test. Dimensions are            7          48
-6,11c14,16
-<                                      ## call ft.  Sat May  2 11:35:32 PDT 2015
-<                                      ## done ft   Sat May  2 11:35:32 PDT 2015
-<                   ## call cooleytukey_outofplace  Sat May  2 11:35:32 PDT 2015
+6,10c14,16
+<                                      ## call ft.  Sat May  2 11:38:19 PDT 2015
+<                                      ## done ft   Sat May  2 11:38:19 PDT 2015
+<                   ## call cooleytukey_outofplace  Sat May  2 11:38:19 PDT 2015
 <  ## call cooleytukey_outofplace_inverse
-<           ## done cooleytukey_outofplace_inverse  Sat May  2 11:35:32 PDT 2015
-<  ## ok
+<           ## done cooleytukey_outofplace_inverse  Sat May  2 11:38:19 PDT 2015
 ---
->               ## call cooleytukey_outofplace_mpi  Sat May  2 11:35:31 PDT 2015
+>               ## call cooleytukey_outofplace_mpi  Sat May  2 11:38:18 PDT 2015
 >  ## call cooleytukey_outofplace_backward_mpi
->      ## done cooleytukey_outofplace_backward_mpi   ## ok
-1022a1028,1029
+>      ## done cooleytukey_outofplace_backward_mpi  Sat May  2 11:38:18 PDT 2015
+1022a1029,1030
 >  OK MPI_TEST DONE!
