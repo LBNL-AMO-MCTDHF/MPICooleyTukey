@@ -302,9 +302,9 @@ subroutine myzfft1d_slowindex_mpi(in,out,totsize,rdd)
   enddo
   select case (ct_paropt)
   case(0)
-  call simple_circ(in,out,fouriermatrix,totsize,CT_MYRANK(rdd),ct_pf(rdd),rdd)
+  call simple_circ(in,out,fouriermatrix,totsize,rdd)
   case(1)
-  call simple_summa(in,out,fouriermatrix,totsize,CT_MYRANK(rdd),ct_pf(rdd),rdd)
+  call simple_summa(in,out,fouriermatrix,totsize,rdd)
   case default
      write(mpifileptr,*) "ct_paropt not recognized",ct_paropt; call mpistop()
   end select
@@ -314,13 +314,14 @@ end subroutine myzfft1d_slowindex_mpi
 
 
 
-subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,rdd)
+
+subroutine simple_circ(in, out,mat,howmany,rdd)
   use ct_fileptrmod
   use ct_mpimod
   use ct_primesetmod
   implicit none
-  integer, intent(in) :: howmany,ctrank,localnumprocs,rdd
-  complex*16, intent(in) :: in(howmany), mat(localnumprocs,localnumprocs)
+  integer, intent(in) :: howmany,rdd
+  complex*16, intent(in) :: in(howmany), mat(ct_pf(rdd),ct_pf(rdd))
   complex*16, intent(out) :: out(howmany)
   integer :: thisfileptr
 #ifdef MPIFLAG
@@ -330,48 +331,30 @@ subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,rdd)
 
   thisfileptr=6
 
-  if (ctrank.ne.CT_MYRANK(rdd)) then
-     print *, "ct_myrank error circ",ctrank,ct_myrank(rdd),rdd,myrank; call mpistop()
-  endif
-
-
-
-!ADD
   if (rdd.lt.1.or.rdd.gt.ct_numprimes) then
      write(*,*) "recursion depth error circ",rdd,ct_numprimes; call mpistop()
   endif
-  if (localnumprocs.ne.ct_pf(rdd)) then
-     write(*,*) "circ recursion error"
-     write(*,*) ctrank,localnumprocs,rdd,ct_pf(rdd)
-     call mpistop()
-  endif
 
 #ifndef MPIFLAG
-  if (ctrank.ne.1) then
-     write(thisfileptr,*) "Error non-mpi rank ne 1", ctrank; call mpistop()
-  endif
   out(:)=in(:)
   return
 #else
 
   ierr=798
-  if (localnumprocs.eq.1) then
+  if (ct_pf(rdd).eq.1) then
      write(thisfileptr,*) "localnumprocs=1 will work, but please edit calling subroutine or "
      write(thisfileptr,*) "  main input file and do not call cooleytukey with nprocs=1."
      call mpistop()
-  endif
-  if (localnumprocs.gt.nprocs.or.localnumprocs.lt.1.or.ctrank.lt.1.or.ctrank.gt.localnumprocs) then
-     write(thisfileptr,*) "local error", ctrank,localnumprocs,nprocs; call mpistop()
   endif
 
   nnn=1
   out(:)=0
 
-  do deltabox=0,localnumprocs-1
-     ibox=mod(localnumprocs+ctrank-1+deltabox,localnumprocs)+1
-     jbox=mod(localnumprocs+ctrank-1-deltabox,localnumprocs)+1
+  do deltabox=0,ct_pf(rdd)-1
+     ibox=mod(ct_pf(rdd)+CT_MYRANK(rdd)-1+deltabox,ct_pf(rdd))+1
+     jbox=mod(ct_pf(rdd)+CT_MYRANK(rdd)-1-deltabox,ct_pf(rdd))+1
 
-     work(:)=in(:)*mat(ibox,ctrank)
+     work(:)=in(:)*mat(ibox,CT_MYRANK(rdd))
 
      if (deltabox.ne.0) then
         call mympisendrecv_complex_local(work(:),work2(:),ibox,jbox,deltabox,howmany,CT_COMM_EACH(CT_MYLOC(rdd),rdd))
@@ -386,13 +369,13 @@ subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,rdd)
 end subroutine simple_circ
 
 
-subroutine simple_summa(in, out,mat,howmany,ctrank,localnumprocs,rdd)
+subroutine simple_summa(in, out,mat,howmany,rdd)
   use ct_fileptrmod
   use ct_mpimod
   use ct_primesetmod
   implicit none
-  integer, intent(in) :: howmany,ctrank,localnumprocs,rdd
-  complex*16, intent(in) :: in(howmany), mat(localnumprocs,localnumprocs)
+  integer, intent(in) :: howmany,rdd
+  complex*16, intent(in) :: in(howmany), mat(ct_pf(rdd),ct_pf(rdd))
   complex*16, intent(out) :: out(howmany)
   integer :: thisfileptr
 #ifdef MPIFLAG
@@ -402,55 +385,39 @@ subroutine simple_summa(in, out,mat,howmany,ctrank,localnumprocs,rdd)
 
   thisfileptr=6
 
-  if (ctrank.ne.CT_MYRANK(rdd)) then
-     print *, "ct_myrank error",ctrank,ct_myrank(rdd),rdd,myrank; call mpistop()
-  endif
-
-
-!ADD
   if (rdd.lt.1.or.rdd.gt.ct_numprimes) then
      write(*,*) "recursion depth error circ",rdd,ct_numprimes; call mpistop()
   endif
-  if (localnumprocs.ne.ct_pf(rdd)) then
-     write(*,*) "circ recursion error"
-     write(*,*) ctrank,localnumprocs,rdd,ct_pf(rdd)
-     call mpistop()
-  endif
 
 #ifndef MPIFLAG
-  if (ctrank.ne.1) then
-     write(thisfileptr,*) "Error non-mpi rank ne 1", ctrank; call mpistop()
-  endif
   out(:)=in(:)
   return
 #else
 
   ierr=(-798)
-  if (localnumprocs.eq.1) then
+  if (ct_pf(rdd).eq.1) then
      write(thisfileptr,*) "localnumprocs=1 will work, but please edit calling subroutine or "
      write(thisfileptr,*) "  main program input file; do not call cooleytukey with nprocs=1."
      call mpistop()
-  endif
-  if (localnumprocs.gt.nprocs.or.localnumprocs.lt.1.or.ctrank.lt.1.or.ctrank.gt.localnumprocs) then
-     write(thisfileptr,*) "local error", ctrank,localnumprocs,nprocs; call mpistop()
   endif
 
   nnn=1
   out(:)=0d0
 
-  do ibox=1,localnumprocs
-     if (ctrank.eq.ibox) then
+  do ibox=1,ct_pf(rdd)
+     if (CT_MYRANK(rdd).eq.ibox) then
         work(:)=in(:)
      endif
-
      call mympicomplexbcast_local(work(:),ibox,howmany,CT_COMM_EACH(CT_MYLOC(rdd),rdd))
 
-     out(:)=out(:)+work(:)*mat(ctrank,ibox)
+     out(:)=out(:)+work(:)*mat(CT_MYRANK(rdd),ibox)
   enddo
 
 #endif
 
 end subroutine simple_summa
+
+
 
 
 subroutine myzfft1d_slowindex_local(in,out,dim1,dim2,howmany)
@@ -580,15 +547,6 @@ end subroutine ct_getprimeset
 
 
 
-
-
-
-
-
-
-
-
-
 subroutine ct_construct()
   use ct_fileptrmod
   use ct_mpimod
@@ -618,16 +576,11 @@ subroutine ct_construct()
      ct_maxposition(ii:ct_numprimes)=ct_maxposition(ii:ct_numprimes)/ct_pf(ii)
   enddo
 
-
   do ii=1,nprocs
      allprocs0(ii)=ii
-!!$     allprocs0(ii)=nprocs+1-ii
   enddo
 
   allprocs(:,:,:,:,:,:,:)=RESHAPE(allprocs0,(/ct_pf(7),ct_pf(6),ct_pf(5),ct_pf(4),ct_pf(3),ct_pf(2),ct_pf(1)/))
-
-!(keepme)!$  allprocs(:,:,:,:,:,:,:)=RESHAPE(allprocs0,(/ct_pf(1),ct_pf(2),ct_pf(3),ct_pf(4),ct_pf(5),ct_pf(6),ct_pf(7)/))
-
 
   qq1=>qq(1); qq2=>qq(2); qq3=>qq(3); qq4=>qq(4); qq5=>qq(5); 
   qq6=>qq(6); qq7=>qq(7); 
@@ -642,15 +595,12 @@ subroutine ct_construct()
      CT_MYPOSITION(iprime)=mod(myrank-1,ct_maxposition(iprime))+1
   enddo
 
-
   do iprime=1,ct_numprimes
      qqtop(:)=1
      qqtop(1:ct_numprimes)=ct_pf(1:ct_numprimes)
      qqtop(iprime)=1
      icomm=0
 
-#define BOOGABOO
-#ifdef BOOGABOO
      do qq7=1,qqtop(7)
      do qq6=1,qqtop(6)
      do qq5=1,qqtop(5)
@@ -658,15 +608,6 @@ subroutine ct_construct()
      do qq3=1,qqtop(3)
      do qq2=1,qqtop(2)
      do qq1=1,qqtop(1)
-#else
-     do qq1=1,qqtop(1)
-     do qq2=1,qqtop(2)
-     do qq3=1,qqtop(3)
-     do qq4=1,qqtop(4)
-     do qq5=1,qqtop(5)
-     do qq6=1,qqtop(6)
-     do qq7=1,qqtop(7)
-#endif
 
         pp0(1:7)=qq(1:7)
         pp1(1:7)=qq(1:7)
@@ -681,11 +622,6 @@ subroutine ct_construct()
         CT_PROCSET(1:ct_pf(iprime),icomm,iprime)=RESHAPE( &
              allprocs(pp0(7):pp1(7), pp0(6):pp1(6), pp0(5):pp1(5), pp0(4):pp1(4), &
              pp0(3):pp1(3), pp0(2):pp1(2), pp0(1):pp1(1)),(/ct_pf(iprime)/))
-
-!        if (myrank.eq.1) then
-!           print *, "PSET",icomm,iprime
-!           print *, "    ",CT_PROCSET(1:ct_pf(iprime),icomm,iprime)
-!        endif
 
         do ii=1,ct_pf(iprime)
            if (CT_PROCSET(ii,icomm,iprime).eq.myrank) then
@@ -725,17 +661,14 @@ subroutine ct_construct()
      enddo
      enddo
      enddo
-
      if (CT_MYLOC(iprime).le.0) then
         print *, "MYLOC ERROR",myrank,CT_MYLOC(iprime),iprime; call mpistop()
      endif
-
   enddo
 
 #endif
 
 end subroutine ct_construct
-
 
 
 
