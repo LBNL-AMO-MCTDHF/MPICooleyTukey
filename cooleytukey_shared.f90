@@ -307,7 +307,7 @@ subroutine myzfft1d_slowindex_mpi(in,out,localnumprocs,ctrank,proclist,totsize,r
 
   do ii=1,localnumprocs
      if (proclist(ii).ne.CT_PROCSET(ii,CT_MYLOC(recursiondepth),recursiondepth)) then
-        print *, "recursion error proclist slowindex "
+        print *, "recursion error proclist slowindex ",myrank
         print *, proclist(1:localnumprocs)
         print *, CT_PROCSET(1:localnumprocs,CT_MYLOC(recursiondepth),recursiondepth)
         call mpistop()
@@ -649,7 +649,7 @@ subroutine ct_construct()
 #ifdef MPIFLAG
   integer :: thisfileptr,procshift(nprocs),ierr,iprime,&
        allprocs0(nprocs), proc_check, ii, &
-       allprocs(ct_pf(1),ct_pf(2),ct_pf(3),ct_pf(4),ct_pf(5),ct_pf(6),ct_pf(7)),&
+       allprocs(ct_pf(7),ct_pf(6),ct_pf(5),ct_pf(4),ct_pf(3),ct_pf(2),ct_pf(1)),&
        qqtop(7),icomm
   integer, target :: qq(7),pp0(7),pp1(7)
   integer, pointer :: qq1,qq2,qq3,qq4,qq5,qq6,qq7
@@ -663,8 +663,11 @@ subroutine ct_construct()
   do ii=1,nprocs
      allprocs0(ii)=ii
   enddo
-  allprocs(:,:,:,:,:,:,:)=RESHAPE(allprocs0,(/ct_pf(1),ct_pf(2),ct_pf(3),ct_pf(4),ct_pf(5),ct_pf(6),ct_pf(7)/))
+
+!!!  allprocs(:,:,:,:,:,:,:)=RESHAPE(allprocs0,(/ct_pf(1),ct_pf(2),ct_pf(3),ct_pf(4),ct_pf(5),ct_pf(6),ct_pf(7)/))
   
+  allprocs(:,:,:,:,:,:,:)=RESHAPE(allprocs0,(/ct_pf(7),ct_pf(6),ct_pf(5),ct_pf(4),ct_pf(3),ct_pf(2),ct_pf(1)/))
+
   qq1=>qq(1); qq2=>qq(2); qq3=>qq(3); qq4=>qq(4); qq5=>qq(5); 
   qq6=>qq(6); qq7=>qq(7); 
 
@@ -697,8 +700,9 @@ subroutine ct_construct()
         endif
 
         CT_PROCSET(1:ct_pf(iprime),icomm,iprime)=RESHAPE( &
-             allprocs(pp0(1):pp1(1), pp0(2):pp1(2), pp0(3):pp1(3), pp0(4):pp1(4), &
-             pp0(5):pp1(5), pp0(6):pp1(6), pp0(7):pp1(7)),(/ct_pf(iprime)/))
+             allprocs(pp0(7):pp1(7), pp0(6):pp1(6), pp0(5):pp1(5), pp0(4):pp1(4), &
+             pp0(3):pp1(3), pp0(2):pp1(2), pp0(1):pp1(1)),(/ct_pf(iprime)/))
+
 !        if (myrank.eq.1) then
 !           print *, "PSET",icomm,iprime
 !           print *, "    ",CT_PROCSET(1:ct_pf(iprime),icomm,iprime)
