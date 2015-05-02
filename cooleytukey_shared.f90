@@ -239,6 +239,9 @@ subroutine ct_init(in_ctparopt,in_mpifileptr)
      mpifileptr=4910
      open(mpifileptr,file="/dev/null", status="unknown")
   endif
+
+!!$ADD  call ct_getprimeset()
+
 end subroutine ct_init
 
 
@@ -268,11 +271,12 @@ subroutine twiddlemult_mpi(blocksize,in,out,dim1,numfactored,myfactor,localnumpr
 end subroutine twiddlemult_mpi
 
 
-subroutine myzfft1d_slowindex_mpi(in,out,localnumprocs,ctrank,proclist,totsize)
+subroutine myzfft1d_slowindex_mpi(in,out,localnumprocs,ctrank,proclist,totsize,recursiondepth)
   use ct_fileptrmod
   use ct_options
+!!$ADD  use ct_primesetmod
   implicit none
-  integer, intent(in) :: totsize,localnumprocs,ctrank,proclist(localnumprocs)
+  integer, intent(in) :: totsize,localnumprocs,ctrank,proclist(localnumprocs),recursiondepth
   complex*16, intent(in) :: in(totsize)
   complex*16, intent(out) :: out(totsize)
   complex*16 :: fouriermatrix(localnumprocs,localnumprocs),twiddle(localnumprocs)
@@ -284,9 +288,9 @@ subroutine myzfft1d_slowindex_mpi(in,out,localnumprocs,ctrank,proclist,totsize)
   enddo
   select case (ct_paropt)
   case(0)
-  call simple_circ(in,out,fouriermatrix,totsize,ctrank,localnumprocs,proclist)
+  call simple_circ(in,out,fouriermatrix,totsize,ctrank,localnumprocs,proclist,recursiondepth)
   case(1)
-  call simple_summa(in,out,fouriermatrix,totsize,ctrank,localnumprocs,proclist)
+  call simple_summa(in,out,fouriermatrix,totsize,ctrank,localnumprocs,proclist,recursiondepth)
   case default
      write(mpifileptr,*) "ct_paropt not recognized",ct_paropt; call mpistop()
   end select
@@ -295,25 +299,29 @@ end subroutine myzfft1d_slowindex_mpi
 
 
 
-subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,proclist)
+subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,proclist,recursiondepth)
   use ct_fileptrmod
   use ct_mpimod
   implicit none
-  integer, intent(in) :: howmany,ctrank,localnumprocs,proclist(localnumprocs)
+  integer, intent(in) :: howmany,ctrank,localnumprocs,proclist(localnumprocs),recursiondepth
   complex*16, intent(in) :: in(howmany), mat(localnumprocs,localnumprocs)
   complex*16, intent(out) :: out(howmany)
   integer :: thisfileptr
-#ifndef MPIFLAG
+#ifdef MPIFLAG
+  complex*16 :: work2(howmany),work(howmany)
+  integer :: ibox,jbox,deltabox,nnn,CT_GROUP_LOCAL,CT_COMM_LOCAL,ierr,procshift(localnumprocs)
+#endif
+
   thisfileptr=6
+
+#ifndef MPIFLAG
   if (ctrank.ne.1) then
      write(thisfileptr,*) "Error non-mpi rank ne 1", ctrank; call mpistop()
   endif
   out(:)=in(:)
   return
 #else
-  complex*16 :: work2(howmany),work(howmany)
-  integer :: ibox,jbox,deltabox,nnn,CT_GROUP_LOCAL,CT_COMM_LOCAL,ierr,procshift(localnumprocs)
-  thisfileptr=6
+
   ierr=798
   if (localnumprocs.eq.1) then
      write(thisfileptr,*) "localnumprocs=1 will work, but please edit calling subroutine or "
@@ -363,25 +371,29 @@ subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,proclist)
 end subroutine simple_circ
 
 
-subroutine simple_summa(in, out,mat,howmany,ctrank,localnumprocs,proclist)
+subroutine simple_summa(in, out,mat,howmany,ctrank,localnumprocs,proclist,recursiondepth)
   use ct_fileptrmod
   use ct_mpimod
   implicit none
-  integer, intent(in) :: howmany,ctrank,localnumprocs,proclist(localnumprocs)
+  integer, intent(in) :: howmany,ctrank,localnumprocs,proclist(localnumprocs),recursiondepth
   complex*16, intent(in) :: in(howmany), mat(localnumprocs,localnumprocs)
   complex*16, intent(out) :: out(howmany)
   integer :: thisfileptr
-#ifndef MPIFLAG
+#ifdef MPIFLAG
+  complex*16 :: work(howmany)
+  integer :: ibox,nnn,CT_GROUP_LOCAL,CT_COMM_LOCAL,ierr,procshift(localnumprocs)
+#endif
+
   thisfileptr=6
+
+#ifndef MPIFLAG
   if (ctrank.ne.1) then
      write(thisfileptr,*) "Error non-mpi rank ne 1", ctrank; call mpistop()
   endif
   out(:)=in(:)
   return
 #else
-  complex*16 :: work(howmany)
-  integer :: ibox,nnn,CT_GROUP_LOCAL,CT_COMM_LOCAL,ierr,procshift(localnumprocs)
-  thisfileptr=6
+
   ierr=(-798)
   if (localnumprocs.eq.1) then
      write(thisfileptr,*) "localnumprocs=1 will work, but please edit calling subroutine or "

@@ -77,7 +77,7 @@ call getallprimefactors(nprocs,numfactors,primefactors)
      write(mpifileptr,*) "## call cooleytukey_outofplace_mpi  "
   endif
   call ctdim(1)
-  call cooleytukey_outofplace_mpi(input1(:,myrank),zoutput1(:,myrank),1,1,size1,primefactors,proclist,nprocs,myrank,1)
+  call cooleytukey_outofplace_forward_mpi(input1(:,myrank),zoutput1(:,myrank),1,1,size1,primefactors,proclist,nprocs,myrank,1)
 
   call mympigather(zoutput1(:,myrank),zoutput1,size1)
 
