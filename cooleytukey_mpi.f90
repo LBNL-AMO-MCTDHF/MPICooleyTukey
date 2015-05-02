@@ -265,7 +265,7 @@ recursive subroutine cooleytukey_outofplace_mpi0(in,outtrans,dim2,dim3,dim1,pf,&
      write(*,*) "RANK FAIL",proclist(newrank,ctrank),localrank,newrank,othersize,ctrank,pf(1); call mpistop()
   endif
 
-  call myzfft1d_slowindex_mpi(in,tempout,pf(1),ctrank,dim1*dim2*dim3*howmany,recursiondepth)
+  call myzfft1d_slowindex_mpi(in,tempout,ctrank,dim1*dim2*dim3*howmany,recursiondepth)
 
   call twiddlemult_mpi(dim2*dim3,tempout,outtemp,dim1,othersize,newrank,pf(1),ctrank,howmany)
 
@@ -328,7 +328,7 @@ recursive subroutine cooleytukey_outofplaceinput_mpi0(intranspose,out,dim2,dim3,
   endif
 
   call twiddlemult_mpi(dim2*dim3,temptrans,outtrans,dim1,othersize,newrank,pf(1),ctrank,howmany)
-  call myzfft1d_slowindex_mpi(outtrans,out,pf(1),ctrank,dim1*dim2*dim3*howmany,recursiondepth)
+  call myzfft1d_slowindex_mpi(outtrans,out,ctrank,dim1*dim2*dim3*howmany,recursiondepth)
 
 end subroutine cooleytukey_outofplaceinput_mpi0
 

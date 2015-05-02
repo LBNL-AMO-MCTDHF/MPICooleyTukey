@@ -285,37 +285,27 @@ subroutine twiddlemult_mpi(blocksize,in,out,dim1,numfactored,myfactor,localnumpr
 end subroutine twiddlemult_mpi
 
 
-subroutine myzfft1d_slowindex_mpi(in,out,localnumprocs,ctrank,totsize,recursiondepth)
+subroutine myzfft1d_slowindex_mpi(in,out,ctrank,totsize,rdd)
   use ct_fileptrmod
   use ct_options
   use ct_primesetmod
   use ct_mpimod !! temp? check myrank
   implicit none
-  integer, intent(in) :: totsize,localnumprocs,ctrank,recursiondepth
+  integer, intent(in) :: totsize,ctrank,rdd
   complex*16, intent(in) :: in(totsize)
   complex*16, intent(out) :: out(totsize)
-  complex*16 :: fouriermatrix(localnumprocs,localnumprocs),twiddle(localnumprocs)
+  complex*16 :: fouriermatrix(ct_pf(rdd),ct_pf(rdd)),twiddle(ct_pf(rdd))
   integer :: ii
 
-
-!ADD
-  if (localnumprocs.ne.ct_pf(recursiondepth)) then
-     write(*,*) "slowindex recursion error"
-     write(*,*) ctrank,localnumprocs,recursiondepth,ct_pf(recursiondepth)
-     call mpistop()
-  endif
-
-
-
-  call gettwiddlesmall(twiddle,localnumprocs,1)
-  do ii=1,localnumprocs
+  call gettwiddlesmall(twiddle,ct_pf(rdd),1)
+  do ii=1,ct_pf(rdd)
      fouriermatrix(:,ii)=twiddle(:)**(ii-1)
   enddo
   select case (ct_paropt)
   case(0)
-  call simple_circ(in,out,fouriermatrix,totsize,ctrank,localnumprocs,recursiondepth)
+  call simple_circ(in,out,fouriermatrix,totsize,ctrank,ct_pf(rdd),rdd)
   case(1)
-  call simple_summa(in,out,fouriermatrix,totsize,ctrank,localnumprocs,recursiondepth)
+  call simple_summa(in,out,fouriermatrix,totsize,ctrank,ct_pf(rdd),rdd)
   case default
      write(mpifileptr,*) "ct_paropt not recognized",ct_paropt; call mpistop()
   end select
