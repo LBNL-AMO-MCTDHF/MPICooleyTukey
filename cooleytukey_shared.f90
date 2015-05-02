@@ -313,9 +313,9 @@ subroutine myzfft1d_slowindex_mpi(in,out,localnumprocs,ctrank,proclist,totsize,r
 !     endif
 !  enddo
 
-  if (ctset(ctrank).ne.myrank) then
-     print *, "ctset error rank", ctset(ctrank),myrank; call mpistop()
-  endif
+!  if (ctset(ctrank).ne.myrank) then
+!     print *, "ctset error rank", ctset(ctrank),myrank; call mpistop()
+!  endif
 
 
   call gettwiddlesmall(twiddle,localnumprocs,1)
@@ -587,6 +587,8 @@ subroutine ct_getprimeset()
   use ct_mpimod
   use ct_primesetmod
   use ct_options
+  implicit none
+  integer :: ii
 
   if (ct_called.ne.0) then
      write(mpifileptr,*) "ONLY CALL CT_GETPRIMESET ONCE (programmer fail)"; call mpistop()
@@ -639,22 +641,24 @@ end subroutine ct_getprimeset
 subroutine ct_construct()
   use ct_fileptrmod
   use ct_mpimod
+  use ct_primesetmod
   implicit none
 #ifdef MPIFLAG
-  integer :: thisfileptr,procshift(nprocs),ierr,iprime,pp0(128),pp1(128), &
+  integer :: thisfileptr,procshift(nprocs),ierr,iprime,pp0(ct_numprimes),pp1(ct_numprimes), &
        allprocs0(nprocs), proc_check, ii, &
-       allprocs(ct_pf(1),ct_pf(2),ct_pf(3),ct_pf(4),ct_pf(5),ct_pf(6),ct_pf(7))
+       allprocs(ct_pf(1),ct_pf(2),ct_pf(3),ct_pf(4),ct_pf(5),ct_pf(6),ct_pf(7)),&
+       qqtop(ct_numprimes),icomm
   integer, target :: qq(128)
   integer, pointer :: qq1,qq2,qq3,qq4,qq5,qq6,qq7
 
   proc_check=ct_pf(1)*ct_pf(2)*ct_pf(3)*ct_pf(4)*ct_pf(5)*ct_pf(6)*ct_pf(7)
   if (proc_check.ne.nprocs) then
-     write(mpifilptr,*) "Proc check programmer error ", proc_check,nprocs,&
+     write(mpifileptr,*) "Proc check programmer error ", proc_check,nprocs,&
           ct_pf(1:7); call mpistop()
   endif
 
   do ii=1,nprocs
-     allprocs0(ii)=i
+     allprocs0(ii)=ii
   enddo
   allprocs(:,:,:,:,:,:,:)=RESHAPE(allprocs0,(/ct_pf(1),ct_pf(2),ct_pf(3),ct_pf(4),ct_pf(5),ct_pf(6),ct_pf(7)/))
   
@@ -701,7 +705,7 @@ subroutine ct_construct()
            endif
         enddo
 
-        procshift(1:ct_pf(iprime))=CT_PROCSET(1:ct_pf(iprime)) - 1
+        procshift(1:ct_pf(iprime))=CT_PROCSET(1:ct_pf(iprime),icomm,iprime) - 1
 
         call mpi_group_incl(CT_GROUP_WORLD,ct_pf(iprime),procshift,CT_GROUP_EACH(icomm,iprime),ierr)
         if (ierr.ne.0) then
@@ -712,16 +716,15 @@ subroutine ct_construct()
            write(thisfileptr,*) "Error comm create CT",icomm,iprime,ierr; call mpistop()
         endif
 
-        print *, "Not done; make destroy."; call mpistop()
-
-        call mpi_comm_free(CT_COMM_EACH(icomm,iprime),ierr)
-        if (ierr.ne.0) then
-           write(thisfileptr,*) "Error comm destroy CT",icomm,iprime,ierr; call mpistop()
-        endif
-        call mpi_group_free(CT_GROUP_EACH(icomm,iprime),ierr)
-        if (ierr.ne.0) then
-           write(thisfileptr,*) "Error group destroy CT",icomm,iprime,ierr; call mpistop()
-        endif
+!!$ make destroy subroutine; keepme
+!!$          call mpi_comm_free(CT_COMM_EACH(icomm,iprime),ierr)
+!!$          if (ierr.ne.0) then
+!!$             write(thisfileptr,*) "Error comm destroy CT",icomm,iprime,ierr; call mpistop()
+!!$          endif
+!!$          call mpi_group_free(CT_GROUP_EACH(icomm,iprime),ierr)
+!!$          if (ierr.ne.0) then
+!!$             write(thisfileptr,*) "Error group destroy CT",icomm,iprime,ierr; call mpistop()
+!!$          endif
 
      enddo
      enddo
