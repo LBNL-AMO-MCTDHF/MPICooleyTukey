@@ -13,7 +13,7 @@ program mpi_test
      open(mpifileptr,file="/dev/null", status="unknown")
   endif
 
-  call ct_init(1, mpifileptr)
+  call ct_init(0, mpifileptr)
 
   call mpi_core(myrank,nprocs,mpifileptr)
 end program mpi_test
