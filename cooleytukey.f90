@@ -1,7 +1,7 @@
 
 
 #define OTHERMACRO pf(2)*pf(3)*pf(4)*pf(5)*pf(6)*pf(7)
-#define MAXFACTORS 7
+#define MAXPRIMES 7
 
 !!$
 !!$Apache License
@@ -200,7 +200,7 @@
 
 subroutine cooleytukey_outofplace_inverse(intranspose,out,dim1,pf,howmany)
   implicit none
-  integer, intent(in) :: dim1,pf(MAXFACTORS),howmany
+  integer, intent(in) :: dim1,pf(MAXPRIMES),howmany
   complex*16, intent(in) :: intranspose(dim1,pf(1)*OTHERMACRO,howmany)
   complex*16, intent(out) :: out(dim1,pf(1)*OTHERMACRO,howmany)
   complex*16 ::  intransconjg(dim1,pf(1)*OTHERMACRO,howmany), &
@@ -235,12 +235,12 @@ end subroutine twiddlemult
 
 recursive subroutine cooleytukey_outofplace(in,outtrans,dim1,pf,howmany)
   implicit none
-  integer, intent(in) :: dim1,pf(MAXFACTORS),howmany
+  integer, intent(in) :: dim1,pf(MAXPRIMES),howmany
   complex*16, intent(in) :: in(dim1,pf(1)*OTHERMACRO,howmany)
   complex*16, intent(out) :: outtrans(dim1,pf(1)*OTHERMACRO,howmany)
   complex*16 ::     tempout(dim1,pf(1)*OTHERMACRO,howmany), &
        outtemp(dim1,pf(1)*OTHERMACRO,howmany)
-  integer :: otherfactor,dim2, newpf(MAXFACTORS)
+  integer :: otherfactor,dim2, newpf(MAXPRIMES)
 
   dim2= pf(1)* OTHERMACRO
 
@@ -252,7 +252,7 @@ recursive subroutine cooleytukey_outofplace(in,outtrans,dim1,pf,howmany)
   if (otherfactor.eq.1) then
      call myzfft1d(outtemp,outtrans,dim1,dim2*howmany)
   else
-     newpf(1:MAXFACTORS-1)=pf(2:MAXFACTORS); newpf(MAXFACTORS)=1
+     newpf(1:MAXPRIMES-1)=pf(2:MAXPRIMES); newpf(MAXPRIMES)=1
      call cooleytukey_outofplace(outtemp,outtrans,dim1,newpf,howmany*pf(1))
   endif
 end subroutine cooleytukey_outofplace
@@ -263,12 +263,12 @@ end subroutine cooleytukey_outofplace
 
 recursive subroutine cooleytukey_outofplaceinput(intranspose,out,dim1,pf,howmany)
   implicit none
-  integer, intent(in) :: dim1,pf(MAXFACTORS),howmany
+  integer, intent(in) :: dim1,pf(MAXPRIMES),howmany
   complex*16, intent(in) :: intranspose(dim1,pf(1)*OTHERMACRO,howmany)
   complex*16, intent(out) :: out(dim1,pf(1)*OTHERMACRO,howmany)
   complex*16 ::    temptrans(dim1,pf(1)*OTHERMACRO,howmany),&
        outtrans(dim1,pf(1)*OTHERMACRO,howmany)
-  integer :: otherfactor,dim2, newpf(MAXFACTORS)
+  integer :: otherfactor,dim2, newpf(MAXPRIMES)
 
   dim2= pf(1)* OTHERMACRO
 
@@ -277,7 +277,7 @@ recursive subroutine cooleytukey_outofplaceinput(intranspose,out,dim1,pf,howmany
   if (otherfactor.eq.1) then
      call myzfft1d(intranspose,temptrans,dim1,dim2*howmany)
   else
-     newpf(1:MAXFACTORS-1)=pf(2:MAXFACTORS); newpf(MAXFACTORS)=1
+     newpf(1:MAXPRIMES-1)=pf(2:MAXPRIMES); newpf(MAXPRIMES)=1
      call cooleytukey_outofplaceinput(intranspose,temptrans,dim1,newpf,howmany*pf(1))
   endif
 

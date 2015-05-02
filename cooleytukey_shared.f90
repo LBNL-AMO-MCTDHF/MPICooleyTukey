@@ -214,12 +214,13 @@ end module ct_options
 module ct_primesetmod
   implicit none
   integer, allocatable :: CT_COMM_EACH(:,:),CT_GROUP_EACH(:,:),CT_PROCSET(:,:,:)
-  integer :: CT_MYLOC(128),CT_MYRANK(128)
+  integer :: CT_MYLOC(128),CT_MYRANK(128),CT_MYPOSITION(128)
   integer :: ct_called=0
   integer :: ct_numprimes = (-1)
   integer :: ct_maxprime = (-1)
   integer :: ct_minprime = (-1)
-  integer :: ct_pf(128)=1
+  integer :: ct_pf(128)=1,ct_maxposition(128)=1
+
 end module ct_primesetmod
 
 
@@ -259,11 +260,12 @@ subroutine ct_init(in_ctparopt,in_mpifileptr)
 end subroutine ct_init
 
 
-subroutine twiddlemult_mpi(blocksize,in,out,dim1,numfactored,myfactor,localnumprocs,ctrank,howmany)
+subroutine twiddlemult_mpi(blocksize,in,out,dim1,numfactored,myfactor,localnumprocs,ctrank,howmany,rdd)
   use ct_fileptrmod
   use ct_mpimod   !! nprocs check
+  use ct_primesetmod
   implicit none
-  integer, intent(in) :: blocksize,dim1,howmany,localnumprocs,numfactored,myfactor,ctrank
+  integer, intent(in) :: blocksize,dim1,howmany,localnumprocs,numfactored,myfactor,ctrank,rdd
   complex*16, intent(in) :: in(blocksize,dim1,howmany)
   complex*16, intent(out) :: out(blocksize,dim1,howmany)
   complex*16 :: twiddle1(dim1,numfactored),tt1(dim1)
@@ -272,6 +274,28 @@ subroutine twiddlemult_mpi(blocksize,in,out,dim1,numfactored,myfactor,localnumpr
   if (myfactor.lt.0.or.myfactor.gt.numfactored) then
      write (mpifileptr,*) "bad factor",myfactor,numfactored; call mpistop()
   endif
+
+  do ii=1,myrank
+     call mpibarrier()
+  enddo
+  n1=0
+  if (myfactor.ne.CT_MYposition(rdd).or.ctrank.ne.CT_MYRANK(rdd).or.localnumprocs.ne.CT_PF(rdd)&
+       .or.numfactored.ne.ct_maxposition(rdd)) then
+     print *, "CHECKME TWIDDLE ERROR",myrank,rdd
+     print *, myfactor, CT_MYposition(rdd)
+     print *, numfactored,ct_maxposition(rdd)
+     print *, ctrank,ct_myrank(rdd)
+     print *, localnumprocs,ct_pf(rdd)
+     n1=1
+  endif
+  do ii=myrank,nprocs
+     call mpibarrier()
+  enddo
+
+  if (n1.ne.0) then
+     call mpistop()
+  endif
+  
 
   call gettwiddlesmall(twiddle1(:,:),dim1*numfactored,localnumprocs)
 
@@ -562,7 +586,7 @@ subroutine ct_getprimeset()
         ct_minprime=ct_pf(ii)
      endif
   enddo
-
+  
   write(mpifileptr,*)
   write(mpifileptr,*) "Go CT_INIT"
   write(mpifileptr,*) "   CT_MAXPRIME IS ",ct_maxprime
@@ -611,11 +635,22 @@ subroutine ct_construct()
           ct_pf(1:7); call mpistop()
   endif
 
+  ct_maxposition(:)=1
+  ct_maxposition(1:ct_numprimes)=nprocs
+  do ii=1,ct_numprimes
+     ct_maxposition(ii:ct_numprimes)=ct_maxposition(ii:ct_numprimes)/ct_pf(ii)
+  enddo
+
+
   do ii=1,nprocs
      allprocs0(ii)=ii
+!!$     allprocs0(ii)=nprocs+1-ii
   enddo
 
   allprocs(:,:,:,:,:,:,:)=RESHAPE(allprocs0,(/ct_pf(7),ct_pf(6),ct_pf(5),ct_pf(4),ct_pf(3),ct_pf(2),ct_pf(1)/))
+
+!(keepme)!$  allprocs(:,:,:,:,:,:,:)=RESHAPE(allprocs0,(/ct_pf(1),ct_pf(2),ct_pf(3),ct_pf(4),ct_pf(5),ct_pf(6),ct_pf(7)/))
+
 
   qq1=>qq(1); qq2=>qq(2); qq3=>qq(3); qq4=>qq(4); qq5=>qq(5); 
   qq6=>qq(6); qq7=>qq(7); 
@@ -624,6 +659,12 @@ subroutine ct_construct()
 
   CT_MYLOC = (-99)
   CT_MYRANK = (-99)
+  CT_MYPOSITION(:) = 1
+
+  do iprime=1,ct_numprimes
+     CT_MYPOSITION(iprime)=mod(myrank-1,ct_maxposition(iprime))+1
+  enddo
+
 
   do iprime=1,ct_numprimes
      qqtop(:)=1
@@ -631,6 +672,16 @@ subroutine ct_construct()
      qqtop(iprime)=1
      icomm=0
 
+#define BOOGABOO
+#ifdef BOOGABOO
+     do qq7=1,qqtop(7)
+     do qq6=1,qqtop(6)
+     do qq5=1,qqtop(5)
+     do qq4=1,qqtop(4)
+     do qq3=1,qqtop(3)
+     do qq2=1,qqtop(2)
+     do qq1=1,qqtop(1)
+#else
      do qq1=1,qqtop(1)
      do qq2=1,qqtop(2)
      do qq3=1,qqtop(3)
@@ -638,6 +689,7 @@ subroutine ct_construct()
      do qq5=1,qqtop(5)
      do qq6=1,qqtop(6)
      do qq7=1,qqtop(7)
+#endif
 
         pp0(1:7)=qq(1:7)
         pp1(1:7)=qq(1:7)
