@@ -19,18 +19,18 @@
  ##
  ##			  
 1c1
-<  Go ft_test. Dimensions are            7          60
+<  Go ft_test. Dimensions are            7          48
 ---
->  Go mpi_test. Dimensions are            7          60
+>  Go mpi_test. Dimensions are            7          48
 6,10c6,8
-<                                      ## call ft.  Fri May  1 20:16:55 PDT 2015
-<                                      ## done ft   Fri May  1 20:16:55 PDT 2015
-<                   ## call cooleytukey_outofplace  Fri May  1 20:16:55 PDT 2015
+<                                      ## call ft.  Sat May  2 09:31:19 PDT 2015
+<                                      ## done ft   Sat May  2 09:31:19 PDT 2015
+<                   ## call cooleytukey_outofplace  Sat May  2 09:31:19 PDT 2015
 <  ## call cooleytukey_outofplace_inverse
-<           ## done cooleytukey_outofplace_inverse  Fri May  1 20:16:55 PDT 2015
+<           ## done cooleytukey_outofplace_inverse  Sat May  2 09:31:19 PDT 2015
 ---
->               ## call cooleytukey_outofplace_mpi  Fri May  1 20:16:54 PDT 2015
+>               ## call cooleytukey_outofplace_mpi  Sat May  2 09:31:18 PDT 2015
 >  ## call cooleytukey_outofplace_backward_mpi
->      ## done cooleytukey_outofplace_backward_mpi  Fri May  1 20:16:55 PDT 2015
-1274a1273,1333
+>      ## done cooleytukey_outofplace_backward_mpi  Sat May  2 09:31:18 PDT 2015
+1022a1021,1069
 >  OK MPI_TEST DONE!
