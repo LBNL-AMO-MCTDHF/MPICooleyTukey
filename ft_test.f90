@@ -17,6 +17,10 @@ program ft_test
   real*8 :: realarray(size),randomamount
   integer :: primefactors(128),numfactors,i
 
+!! only nprocs=1 tho -- this is a serial program
+
+  call mpistart()
+
   do i=1,size
      input(i)=exp(-249*(i-(size+1)*0.5d0)**2/size**2)  * (-1)**i
   enddo
