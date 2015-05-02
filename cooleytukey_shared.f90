@@ -285,21 +285,17 @@ subroutine twiddlemult_mpi(blocksize,in,out,dim1,numfactored,myfactor,localnumpr
 end subroutine twiddlemult_mpi
 
 
-subroutine myzfft1d_slowindex_mpi(in,out,ctrank,totsize,rdd)
+subroutine myzfft1d_slowindex_mpi(in,out,totsize,rdd)
   use ct_fileptrmod
   use ct_options
   use ct_primesetmod
   use ct_mpimod !! temp? check myrank
   implicit none
-  integer, intent(in) :: totsize,ctrank,rdd
+  integer, intent(in) :: totsize,rdd
   complex*16, intent(in) :: in(totsize)
   complex*16, intent(out) :: out(totsize)
   complex*16 :: fouriermatrix(ct_pf(rdd),ct_pf(rdd)),twiddle(ct_pf(rdd))
   integer :: ii
-
-  if (ctrank.ne.CT_MYRANK(rdd)) then
-     print *, "ct_myrank error",ctrank,ct_myrank(rdd),rdd,myrank; call mpistop()
-  endif
 
   call gettwiddlesmall(twiddle,ct_pf(rdd),1)
   do ii=1,ct_pf(rdd)
@@ -307,9 +303,9 @@ subroutine myzfft1d_slowindex_mpi(in,out,ctrank,totsize,rdd)
   enddo
   select case (ct_paropt)
   case(0)
-  call simple_circ(in,out,fouriermatrix,totsize,ctrank,ct_pf(rdd),rdd)
+  call simple_circ(in,out,fouriermatrix,totsize,CT_MYRANK(rdd),ct_pf(rdd),rdd)
   case(1)
-  call simple_summa(in,out,fouriermatrix,totsize,ctrank,ct_pf(rdd),rdd)
+  call simple_summa(in,out,fouriermatrix,totsize,CT_MYRANK(rdd),ct_pf(rdd),rdd)
   case default
      write(mpifileptr,*) "ct_paropt not recognized",ct_paropt; call mpistop()
   end select
@@ -319,12 +315,12 @@ end subroutine myzfft1d_slowindex_mpi
 
 
 
-subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,recursiondepth)
+subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,rdd)
   use ct_fileptrmod
   use ct_mpimod
   use ct_primesetmod
   implicit none
-  integer, intent(in) :: howmany,ctrank,localnumprocs,recursiondepth
+  integer, intent(in) :: howmany,ctrank,localnumprocs,rdd
   complex*16, intent(in) :: in(howmany), mat(localnumprocs,localnumprocs)
   complex*16, intent(out) :: out(howmany)
   integer :: thisfileptr
@@ -335,13 +331,19 @@ subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,recursiondepth)
 
   thisfileptr=6
 
-!ADD
-  if (recursiondepth.lt.1.or.recursiondepth.gt.ct_numprimes) then
-     write(*,*) "recursion depth error circ",recursiondepth,ct_numprimes; call mpistop()
+  if (ctrank.ne.CT_MYRANK(rdd)) then
+     print *, "ct_myrank error circ",ctrank,ct_myrank(rdd),rdd,myrank; call mpistop()
   endif
-  if (localnumprocs.ne.ct_pf(recursiondepth)) then
+
+
+
+!ADD
+  if (rdd.lt.1.or.rdd.gt.ct_numprimes) then
+     write(*,*) "recursion depth error circ",rdd,ct_numprimes; call mpistop()
+  endif
+  if (localnumprocs.ne.ct_pf(rdd)) then
      write(*,*) "circ recursion error"
-     write(*,*) ctrank,localnumprocs,recursiondepth,ct_pf(recursiondepth)
+     write(*,*) ctrank,localnumprocs,rdd,ct_pf(rdd)
      call mpistop()
   endif
 
@@ -373,7 +375,7 @@ subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,recursiondepth)
      work(:)=in(:)*mat(ibox,ctrank)
 
      if (deltabox.ne.0) then
-        call mympisendrecv_complex_local(work(:),work2(:),ibox,jbox,deltabox,howmany,CT_COMM_EACH(CT_MYLOC(recursiondepth),recursiondepth))
+        call mympisendrecv_complex_local(work(:),work2(:),ibox,jbox,deltabox,howmany,CT_COMM_EACH(CT_MYLOC(rdd),rdd))
         out(:)=out(:)+work2(:)
      else
         out(:)=out(:)+work(:)
@@ -385,12 +387,12 @@ subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,recursiondepth)
 end subroutine simple_circ
 
 
-subroutine simple_summa(in, out,mat,howmany,ctrank,localnumprocs,recursiondepth)
+subroutine simple_summa(in, out,mat,howmany,ctrank,localnumprocs,rdd)
   use ct_fileptrmod
   use ct_mpimod
   use ct_primesetmod
   implicit none
-  integer, intent(in) :: howmany,ctrank,localnumprocs,recursiondepth
+  integer, intent(in) :: howmany,ctrank,localnumprocs,rdd
   complex*16, intent(in) :: in(howmany), mat(localnumprocs,localnumprocs)
   complex*16, intent(out) :: out(howmany)
   integer :: thisfileptr
@@ -401,13 +403,18 @@ subroutine simple_summa(in, out,mat,howmany,ctrank,localnumprocs,recursiondepth)
 
   thisfileptr=6
 
-!ADD
-  if (recursiondepth.lt.1.or.recursiondepth.gt.ct_numprimes) then
-     write(*,*) "recursion depth error circ",recursiondepth,ct_numprimes; call mpistop()
+  if (ctrank.ne.CT_MYRANK(rdd)) then
+     print *, "ct_myrank error",ctrank,ct_myrank(rdd),rdd,myrank; call mpistop()
   endif
-  if (localnumprocs.ne.ct_pf(recursiondepth)) then
+
+
+!ADD
+  if (rdd.lt.1.or.rdd.gt.ct_numprimes) then
+     write(*,*) "recursion depth error circ",rdd,ct_numprimes; call mpistop()
+  endif
+  if (localnumprocs.ne.ct_pf(rdd)) then
      write(*,*) "circ recursion error"
-     write(*,*) ctrank,localnumprocs,recursiondepth,ct_pf(recursiondepth)
+     write(*,*) ctrank,localnumprocs,rdd,ct_pf(rdd)
      call mpistop()
   endif
 
@@ -437,7 +444,7 @@ subroutine simple_summa(in, out,mat,howmany,ctrank,localnumprocs,recursiondepth)
         work(:)=in(:)
      endif
 
-     call mympicomplexbcast_local(work(:),ibox,howmany,CT_COMM_EACH(CT_MYLOC(recursiondepth),recursiondepth))
+     call mympicomplexbcast_local(work(:),ibox,howmany,CT_COMM_EACH(CT_MYLOC(rdd),rdd))
 
      out(:)=out(:)+work(:)*mat(ctrank,ibox)
   enddo
