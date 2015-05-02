@@ -312,9 +312,6 @@ subroutine myzfft1d_slowindex_mpi(in,out,totsize,rdd)
 end subroutine myzfft1d_slowindex_mpi
 
 
-
-
-
 subroutine simple_circ(in, out,mat,howmany,rdd)
   use ct_fileptrmod
   use ct_mpimod
@@ -326,7 +323,7 @@ subroutine simple_circ(in, out,mat,howmany,rdd)
   integer :: thisfileptr
 #ifdef MPIFLAG
   complex*16 :: work2(howmany),work(howmany)
-  integer :: ibox,jbox,deltabox,nnn,ierr
+  integer :: ibox,jbox,deltabox,nnn
 #endif
 
   thisfileptr=6
@@ -340,12 +337,11 @@ subroutine simple_circ(in, out,mat,howmany,rdd)
   return
 #else
 
-  ierr=798
-  if (ct_pf(rdd).eq.1) then
-     write(thisfileptr,*) "localnumprocs=1 will work, but please edit calling subroutine or "
-     write(thisfileptr,*) "  main input file and do not call cooleytukey with nprocs=1."
-     call mpistop()
-  endif
+!!$  if (ct_pf(rdd).eq.1) then
+!!$     write(thisfileptr,*) "localnumprocs=1 will work, but please edit calling subroutine or "
+!!$     write(thisfileptr,*) "  main input file and do not call cooleytukey with nprocs=1."
+!!$     call mpistop()
+!!$  endif
 
   nnn=1
   out(:)=0
@@ -363,7 +359,6 @@ subroutine simple_circ(in, out,mat,howmany,rdd)
         out(:)=out(:)+work(:)
      endif
   enddo
-
 #endif
 
 end subroutine simple_circ
@@ -380,7 +375,7 @@ subroutine simple_summa(in, out,mat,howmany,rdd)
   integer :: thisfileptr
 #ifdef MPIFLAG
   complex*16 :: work(howmany)
-  integer :: ibox,nnn,ierr
+  integer :: ibox,nnn
 #endif
 
   thisfileptr=6
@@ -394,12 +389,11 @@ subroutine simple_summa(in, out,mat,howmany,rdd)
   return
 #else
 
-  ierr=(-798)
-  if (ct_pf(rdd).eq.1) then
-     write(thisfileptr,*) "localnumprocs=1 will work, but please edit calling subroutine or "
-     write(thisfileptr,*) "  main program input file; do not call cooleytukey with nprocs=1."
-     call mpistop()
-  endif
+!!$  if (ct_pf(rdd).eq.1) then
+!!$     write(thisfileptr,*) "localnumprocs=1 will work, but please edit calling subroutine or "
+!!$     write(thisfileptr,*) "  main program input file; do not call cooleytukey with nprocs=1."
+!!$     call mpistop()
+!!$  endif
 
   nnn=1
   out(:)=0d0
@@ -409,15 +403,11 @@ subroutine simple_summa(in, out,mat,howmany,rdd)
         work(:)=in(:)
      endif
      call mympicomplexbcast_local(work(:),ibox,howmany,CT_COMM_EACH(CT_MYLOC(rdd),rdd))
-
      out(:)=out(:)+work(:)*mat(CT_MYRANK(rdd),ibox)
   enddo
-
 #endif
 
 end subroutine simple_summa
-
-
 
 
 subroutine myzfft1d_slowindex_local(in,out,dim1,dim2,howmany)
@@ -481,7 +471,6 @@ subroutine getallprimefactors(dim,factormax,numfactors,allfactors)
   endif
 go to 798
 end subroutine getallprimefactors
-  
 
 
 subroutine gettwiddlesmall(twiddlefacs,dim1,dim2)
@@ -665,7 +654,6 @@ subroutine ct_construct()
         print *, "MYLOC ERROR",myrank,CT_MYLOC(iprime),iprime; call mpistop()
      endif
   enddo
-
 #endif
 
 end subroutine ct_construct
