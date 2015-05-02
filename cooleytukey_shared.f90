@@ -294,10 +294,6 @@ subroutine myzfft1d_slowindex_mpi(in,out,localnumprocs,ctrank,proclist,totsize)
 end subroutine myzfft1d_slowindex_mpi
 
 
-!! Nonstandard MPI.  Not all processes construct all communicators; instead they only
-!! construct their own.  Yong says it should be ok... usually... work in progress
-!! (https://github.com/LBNL-AMO-MCTDHF/CooleyTukeyMPI)
-
 
 subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,proclist)
   use ct_fileptrmod
