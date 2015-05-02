@@ -210,6 +210,20 @@ module ct_options
 end module ct_options
 
 
+
+module ct_primesetmod
+  implicit none
+  integer, allocatable :: CT_COMM_EACH(:,:),CT_GROUP_EACH(:,:),CT_PROCSET(:,:,:)
+  integer :: CT_MYLOC(128)
+  integer :: ct_called=0
+  integer :: ct_numprimes = (-1)
+  integer :: ct_maxprime = (-1)
+  integer :: ct_minprime = (-1)
+  integer :: ct_pf(128)=1
+end module ct_primesetmod
+
+
+
 subroutine ctdim(in_ctdim)
   use ct_fileptrmod
   use ct_mpimod
@@ -282,6 +296,28 @@ subroutine myzfft1d_slowindex_mpi(in,out,localnumprocs,ctrank,proclist,totsize,r
   complex*16 :: fouriermatrix(localnumprocs,localnumprocs),twiddle(localnumprocs)
   integer :: ii
 
+
+!ADD
+!  if (localnumprocs.ne.ct_pf(recursiondepth)) then
+!     write(*,*) "slowindex recursion error"
+!     write(*,*) ctrank,localnumprocs,recursiondepth,ct_pf(recursiondepth)
+!     call mpistop()
+!  endif
+
+!  do ii=1,localnumprocs
+!     if (ctset(ii).ne.CT_PROCSET(ii,CT_MYLOC(recursiondepth),recursiondepth)) then
+!        print *, "recursion error ctset slowindex "
+!        print *, ctset(1:localnumprocs)
+!        print *, CT_PROCSET(1:localnumprocs,CT_MYLOC(recursiondepth),recursiondepth)
+!        call mpistop()
+!     endif
+!  enddo
+
+  if (ctset(ctrank).ne.myrank) then
+     print *, "ctset error rank", ctset(ctrank),myrank; call mpistop()
+  endif
+
+
   call gettwiddlesmall(twiddle,localnumprocs,1)
   do ii=1,localnumprocs
      fouriermatrix(:,ii)=twiddle(:)**(ii-1)
@@ -313,6 +349,16 @@ subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,proclist,recursi
 #endif
 
   thisfileptr=6
+
+!ADD
+!  if (recursiondepth.lt.1.or.recursiondepth.gt.ct_numprimes) then
+!     write(*,*) "recursion depth error circ",recursiondepth,ct_numprimes; call mpistop()
+!  endif
+!  if (localnumprocs.ne.ct_pf(recursiondepth)) then
+!     write(*,*) "circ recursion error"
+!     write(*,*) ctrank,localnumprocs,recursiondepth,ct_pf(recursiondepth)
+!     call mpistop()
+!  endif
 
 #ifndef MPIFLAG
   if (ctrank.ne.1) then
@@ -353,6 +399,9 @@ subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,proclist,recursi
 
      if (deltabox.ne.0) then
         call mympisendrecv_complex_local(work(:),work2(:),ibox,jbox,deltabox,howmany,CT_COMM_LOCAL)
+
+!!$ADD   call mympisendrecv_complex_local(work(:),work2(:),ibox,jbox,deltabox,howmany,CT_COMM_EACH(CT_MYLOC(recursiondepth),recursiondepth))
+
         out(:)=out(:)+work2(:)
      else
         out(:)=out(:)+work(:)
@@ -385,6 +434,16 @@ subroutine simple_summa(in, out,mat,howmany,ctrank,localnumprocs,proclist,recurs
 #endif
 
   thisfileptr=6
+
+!ADD
+!  if (recursiondepth.lt.1.or.recursiondepth.gt.ct_numprimes) then
+!     write(*,*) "recursion depth error circ",recursiondepth,ct_numprimes; call mpistop()
+!  endif
+!  if (localnumprocs.ne.ct_pf(recursiondepth)) then
+!     write(*,*) "circ recursion error"
+!     write(*,*) ctrank,localnumprocs,recursiondepth,ct_pf(recursiondepth)
+!     call mpistop()
+!  endif
 
 #ifndef MPIFLAG
   if (ctrank.ne.1) then
@@ -423,6 +482,9 @@ subroutine simple_summa(in, out,mat,howmany,ctrank,localnumprocs,proclist,recurs
         work(:)=in(:)
      endif
      call mympicomplexbcast_local(work(:),ibox,howmany,CT_COMM_LOCAL)
+
+!!$ADD     call mympicomplexbcast_local(work(:),ibox,howmany,CT_COMM_EACH(CT_MYLOC(recursiondepth),recursiondepth))
+
      out(:)=out(:)+work(:)*mat(ctrank,ibox)
   enddo
   call mpi_comm_free(CT_COMM_LOCAL,ierr)
@@ -517,20 +579,168 @@ subroutine gettwiddlesmall(twiddlefacs,dim1,dim2)
 end subroutine gettwiddlesmall
 
 
+!! PRIMESET SUBROUTINES
 
-!! haven't done proper version with recursion
-!
-!subroutine cooleytukey_replace(blocksize,intranspose,out,dim1,dim2,howmany)
-!  implicit none
-!  integer, intent(in) :: dim1,dim2,howmany,blocksize
-!  complex*16, intent(in) :: intranspose(blocksize,dim1,dim2,howmany)
-!  complex*16, intent(out) :: out(blocksize,dim1,dim2,howmany)
-!  integer :: ii,jj
-!
-!  do ii=1,howmany
-!     do jj=1,blocksize
-!        out(jj,:,:,ii)=RESHAPE(TRANSPOSE(intranspose(jj,:,:,ii)),(/dim1,dim2/))
-!     enddo
-!  enddo
-!
-!end subroutine cooleytukey_replace
+
+subroutine ct_getprimeset()
+  use ct_fileptrmod
+  use ct_mpimod
+  use ct_primesetmod
+  use ct_options
+
+  if (ct_called.ne.0) then
+     write(mpifileptr,*) "ONLY CALL CT_GETPRIMESET ONCE (programmer fail)"; call mpistop()
+  endif
+  ct_called=1
+
+  call getallprimefactors(nprocs,ct_numprimes,ct_pf)
+  if (ct_numprimes.gt.7) then
+     write(mpifileptr,*) "Check dimensions ... ct_numprimes>7."; call mpistop()
+  endif
+  ct_maxprime=1; ct_minprime=32767
+  do ii=1,ct_numprimes
+     if (ct_pf(ii).gt.ct_maxprime) then
+        ct_maxprime=ct_pf(ii)
+     endif
+     if (ct_pf(ii).lt.ct_minprime) then
+        ct_minprime=ct_pf(ii)
+     endif
+  enddo
+
+  write(mpifileptr,*)
+  write(mpifileptr,*) "Go CT_INIT"
+  write(mpifileptr,*) "   CT_MAXPRIME IS ",ct_maxprime
+  write(mpifileptr,*) "    CT_PRIMEFACTORS ARE"
+  write(mpifileptr,*) "  ",ct_pf(1:ct_numprimes)
+  allocate(CT_COMM_EACH(nprocs/ct_minprime,ct_numprimes),CT_GROUP_EACH(nprocs/ct_minprime,ct_numprimes))
+  CT_COMM_EACH(:,:)=(-42); CT_GROUP_EACH(:,:)=(-42)
+  allocate(CT_PROCSET(ct_maxprime, nprocs/ct_minprime,ct_numprimes))
+  CT_PROCSET(:,:,:)=1
+
+  write(mpifileptr,*) "Calling ct_construct..."
+  call ct_construct()
+  write(mpifileptr,*) "   ....Called ct_construct."
+  write(mpifileptr,*) 
+
+end subroutine ct_getprimeset
+
+
+
+
+
+
+
+
+
+
+
+
+
+subroutine ct_construct()
+  use ct_fileptrmod
+  use ct_mpimod
+  implicit none
+#ifdef MPIFLAG
+  integer :: thisfileptr,procshift(nprocs),ierr,iprime,pp0(128),pp1(128), &
+       allprocs0(nprocs), proc_check, ii, &
+       allprocs(ct_pf(1),ct_pf(2),ct_pf(3),ct_pf(4),ct_pf(5),ct_pf(6),ct_pf(7))
+  integer, target :: qq(128)
+  integer, pointer :: qq1,qq2,qq3,qq4,qq5,qq6,qq7
+
+  proc_check=ct_pf(1)*ct_pf(2)*ct_pf(3)*ct_pf(4)*ct_pf(5)*ct_pf(6)*ct_pf(7)
+  if (proc_check.ne.nprocs) then
+     write(mpifilptr,*) "Proc check programmer error ", proc_check,nprocs,&
+          ct_pf(1:7); call mpistop()
+  endif
+
+  do ii=1,nprocs
+     allprocs0(ii)=i
+  enddo
+  allprocs(:,:,:,:,:,:,:)=RESHAPE(allprocs0,(/ct_pf(1),ct_pf(2),ct_pf(3),ct_pf(4),ct_pf(5),ct_pf(6),ct_pf(7)/))
+  
+  qq1=>qq(1); qq2=>qq(2); qq3=>qq(3); qq4=>qq(4); qq5=>qq(5); 
+  qq6=>qq(6); qq7=>qq(7); 
+
+  thisfileptr=6
+
+  CT_MYLOC = (-99)
+
+  do iprime=1,ct_numprimes
+     qqtop(1:ct_numprimes)=ct_pf(1:ct_numprimes)
+     qqtop(iprime)=1
+     icomm=0
+     
+     do qq1=1,qqtop(1)
+     do qq2=1,qqtop(2)
+     do qq3=1,qqtop(3)
+     do qq4=1,qqtop(4)
+     do qq5=1,qqtop(5)
+     do qq6=1,qqtop(6)
+     do qq7=1,qqtop(7)
+
+        pp0(1:7)=qq(1:7)
+        pp1(1:7)=qq(1:7)
+        pp0(iprime)=1
+        pp1(iprime)=ct_pf(iprime)
+
+        icomm=icomm+1
+        if (icomm.gt.nprocs/ct_minprime) then
+           write(mpifileptr,*) "Error construct",icomm,nprocs,ct_minprime; call mpistop()
+        endif
+
+        CT_PROCSET(1:ct_pf(iprime),icomm,iprime)=RESHAPE( &
+             allprocs(pp0(1):pp1(1), pp0(2):pp1(2), pp0(3):pp1(3), pp0(4):pp1(4), &
+             pp0(5):pp1(5), pp0(6):pp1(6), pp0(7):pp1(7)),(/ct_pf(iprime)/))
+
+        do ii=1,ct_pf(iprime)
+           if (CT_PROCSET(ii,icomm,iprime).eq.myrank) then
+              if (CT_MYLOC(iprime).gt.0) then
+                 print *, "ERROR MYLOC"; call mpistop()
+              endif
+              CT_MYLOC(iprime)=icomm
+           endif
+        enddo
+
+        procshift(1:ct_pf(iprime))=CT_PROCSET(1:ct_pf(iprime)) - 1
+
+        call mpi_group_incl(CT_GROUP_WORLD,ct_pf(iprime),procshift,CT_GROUP_EACH(icomm,iprime),ierr)
+        if (ierr.ne.0) then
+           write(thisfileptr,*) "Error group incl CT",icomm,iprime,ierr; call mpistop()
+        endif
+        call mpi_comm_create(CT_COMM_WORLD, CT_GROUP_EACH(icomm,iprime), CT_COMM_EACH(icomm,iprime),ierr)
+        if (ierr.ne.0) then
+           write(thisfileptr,*) "Error comm create CT",icomm,iprime,ierr; call mpistop()
+        endif
+
+        print *, "Not done; make destroy."; call mpistop()
+
+        call mpi_comm_free(CT_COMM_EACH(icomm,iprime),ierr)
+        if (ierr.ne.0) then
+           write(thisfileptr,*) "Error comm destroy CT",icomm,iprime,ierr; call mpistop()
+        endif
+        call mpi_group_free(CT_GROUP_EACH(icomm,iprime),ierr)
+        if (ierr.ne.0) then
+           write(thisfileptr,*) "Error group destroy CT",icomm,iprime,ierr; call mpistop()
+        endif
+
+     enddo
+     enddo
+     enddo
+     enddo
+     enddo
+     enddo
+     enddo
+
+     if (CT_MYLOC(iprime).le.0) then
+        print *, "MYLOC ERROR",myrank,CT_MYLOC(iprime),iprime; call mpistop()
+     endif
+
+  enddo
+
+#endif
+
+end subroutine ct_construct
+
+
+
+
