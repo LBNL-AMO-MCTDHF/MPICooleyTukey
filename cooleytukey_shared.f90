@@ -262,7 +262,6 @@ end subroutine ct_init
 
 subroutine twiddlemult_mpi(blocksize,in,out,dim1,howmany,rdd)
   use ct_fileptrmod
-  use ct_mpimod   !! nprocs check
   use ct_primesetmod
   implicit none
   integer, intent(in) :: blocksize,dim1,howmany,rdd

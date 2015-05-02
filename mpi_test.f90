@@ -34,7 +34,7 @@ subroutine mpi_core(myrank,nprocs,mpifileptr)
        input1(size1,nprocs), & !!TEMP output(size1*nprocs),
        input0(size1*nprocs)  !!,output1(size1,nprocs)
   real*8 :: realarray(size1*nprocs),randomamount
-  integer :: primefactors(7),numfactors,i,proclist(nprocs)
+  integer :: primefactors(7),numfactors,i
 
   size=nprocs*size1
   do i=1,size
@@ -66,10 +66,6 @@ call getallprimefactors(nprocs,numfactors,primefactors)
 
   input1(:,:)=RESHAPE(input,(/size1,nprocs/))
 
-  do i=1,nprocs
-     proclist(i)=i
-  enddo
-
   if (myrank.eq.1) then
      write(mpifileptr,'(A50,$)') "## call cooleytukey_outofplace_mpi  "
      call system('date')
@@ -77,13 +73,13 @@ call getallprimefactors(nprocs,numfactors,primefactors)
      write(mpifileptr,*) "## call cooleytukey_outofplace_mpi  "
   endif
   call ctdim(1)
-  call cooleytukey_outofplace_forward_mpi(input1(:,myrank),zoutput1(:,myrank),1,1,size1,primefactors,proclist,nprocs,myrank,1)
+  call cooleytukey_outofplace_forward_mpi(input1(:,myrank),zoutput1(:,myrank),1,1,size1,primefactors,nprocs,myrank,1)
 
   call mympigather(zoutput1(:,myrank),zoutput1,size1)
 
   write(mpifileptr,*) "## call cooleytukey_outofplace_backward_mpi"
   call ctdim(1)
-  call cooleytukey_outofplace_backward_mpi(zoutput1(:,myrank),input1(:,myrank),1,1,size1,primefactors,proclist,nprocs,myrank,1)
+  call cooleytukey_outofplace_backward_mpi(zoutput1(:,myrank),input1(:,myrank),1,1,size1,primefactors,nprocs,myrank,1)
   input1(:,myrank)=input1(:,myrank)/size1/nprocs
 
   if (myrank.eq.1) then
