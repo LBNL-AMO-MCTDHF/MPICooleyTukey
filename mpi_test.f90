@@ -73,13 +73,13 @@ call getallprimefactors(nprocs,numfactors,primefactors)
      write(mpifileptr,*) "## call cooleytukey_outofplace_mpi  "
   endif
   call ctdim(1)
-  call cooleytukey_outofplace_forward_mpi(input1(:,myrank),zoutput1(:,myrank),1,1,size1,primefactors,nprocs,1)
+  call cooleytukey_outofplace_forward_mpi(input1(:,myrank),zoutput1(:,myrank),1,1,size1,primefactors,1)
 
   call mympigather(zoutput1(:,myrank),zoutput1,size1)
 
   write(mpifileptr,*) "## call cooleytukey_outofplace_backward_mpi"
   call ctdim(1)
-  call cooleytukey_outofplace_backward_mpi(zoutput1(:,myrank),input1(:,myrank),1,1,size1,primefactors,nprocs,1)
+  call cooleytukey_outofplace_backward_mpi(zoutput1(:,myrank),input1(:,myrank),1,1,size1,primefactors,1)
   input1(:,myrank)=input1(:,myrank)/size1/nprocs
 
   if (myrank.eq.1) then
