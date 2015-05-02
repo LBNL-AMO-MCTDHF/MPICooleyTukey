@@ -246,7 +246,7 @@ recursive subroutine cooleytukey_outofplace_mpi0(in,outtrans,dim2,dim3,dim1,pf,&
   complex*16, intent(in) :: in(dim2,dim3,dim1,howmany)
   complex*16, intent(out) :: outtrans(dim2,dim3,dim1,howmany)
   complex*16 ::  tempout(dim2,dim3,dim1,howmany),  outtemp(dim2,dim3,dim1,howmany)
-  integer :: othersize, newrank, newpf(MAXFACTORS),newproclist(localnprocs/pf(1)),ctrank,ctset(pf(1)),newdepth
+  integer :: othersize, newrank, newpf(MAXFACTORS),newproclist(localnprocs/pf(1)),ctrank,newdepth
 
   if ((localnprocs/pf(1))*pf(1).ne.localnprocs) then
      write(mpifileptr,*) "Divisibility error outofplace ",localnprocs,pf(1); call mpistop()
@@ -258,7 +258,6 @@ recursive subroutine cooleytukey_outofplace_mpi0(in,outtrans,dim2,dim3,dim1,pf,&
   othersize=localnprocs/pf(1)
   ctrank=(localrank-1)/othersize+1
   newrank=mod(localrank-1,othersize)+1
-  ctset(:)=proclist(newrank,:)
   newproclist=proclist(:,ctrank)
   newdepth=recursiondepth+1
 
@@ -266,7 +265,7 @@ recursive subroutine cooleytukey_outofplace_mpi0(in,outtrans,dim2,dim3,dim1,pf,&
      write(*,*) "RANK FAIL",proclist(newrank,ctrank),localrank,newrank,othersize,ctrank,pf(1); call mpistop()
   endif
 
-  call myzfft1d_slowindex_mpi(in,tempout,pf(1),ctrank,ctset,dim1*dim2*dim3*howmany,recursiondepth)
+  call myzfft1d_slowindex_mpi(in,tempout,pf(1),ctrank,dim1*dim2*dim3*howmany,recursiondepth)
 
   call twiddlemult_mpi(dim2*dim3,tempout,outtemp,dim1,othersize,newrank,pf(1),ctrank,howmany)
 
@@ -295,7 +294,7 @@ recursive subroutine cooleytukey_outofplaceinput_mpi0(intranspose,out,dim2,dim3,
   complex*16, intent(in) :: intranspose(dim2,dim3,dim1,howmany)
   complex*16, intent(out) :: out(dim2,dim3,dim1,howmany)
   complex*16 ::   temptrans(dim2,dim3,dim1,howmany),outtrans(dim2,dim3,dim1,howmany)
-  integer :: othersize, newrank, newpf(MAXFACTORS),newproclist(localnprocs/pf(1)),ctrank,ctset(pf(1)),newdepth
+  integer :: othersize, newrank, newpf(MAXFACTORS),newproclist(localnprocs/pf(1)),ctrank,newdepth
 
   if ((localnprocs/pf(1))*pf(1).ne.localnprocs) then
      write(mpifileptr,*) "Divisibility error outofplaceinput ",localnprocs,pf(1); call mpistop()
@@ -307,7 +306,6 @@ recursive subroutine cooleytukey_outofplaceinput_mpi0(intranspose,out,dim2,dim3,
   othersize=localnprocs/pf(1)
   ctrank=(localrank-1)/othersize+1
   newrank=mod(localrank-1,othersize)+1
-  ctset(:)=proclist(newrank,:)
   newproclist=proclist(:,ctrank)
   newdepth=recursiondepth+1
 
@@ -330,7 +328,7 @@ recursive subroutine cooleytukey_outofplaceinput_mpi0(intranspose,out,dim2,dim3,
   endif
 
   call twiddlemult_mpi(dim2*dim3,temptrans,outtrans,dim1,othersize,newrank,pf(1),ctrank,howmany)
-  call myzfft1d_slowindex_mpi(outtrans,out,pf(1),ctrank,ctset,dim1*dim2*dim3*howmany,recursiondepth)
+  call myzfft1d_slowindex_mpi(outtrans,out,pf(1),ctrank,dim1*dim2*dim3*howmany,recursiondepth)
 
 end subroutine cooleytukey_outofplaceinput_mpi0
 

@@ -285,13 +285,13 @@ subroutine twiddlemult_mpi(blocksize,in,out,dim1,numfactored,myfactor,localnumpr
 end subroutine twiddlemult_mpi
 
 
-subroutine myzfft1d_slowindex_mpi(in,out,localnumprocs,ctrank,proclist,totsize,recursiondepth)
+subroutine myzfft1d_slowindex_mpi(in,out,localnumprocs,ctrank,totsize,recursiondepth)
   use ct_fileptrmod
   use ct_options
   use ct_primesetmod
   use ct_mpimod !! temp? check myrank
   implicit none
-  integer, intent(in) :: totsize,localnumprocs,ctrank,proclist(localnumprocs),recursiondepth
+  integer, intent(in) :: totsize,localnumprocs,ctrank,recursiondepth
   complex*16, intent(in) :: in(totsize)
   complex*16, intent(out) :: out(totsize)
   complex*16 :: fouriermatrix(localnumprocs,localnumprocs),twiddle(localnumprocs)
@@ -305,18 +305,6 @@ subroutine myzfft1d_slowindex_mpi(in,out,localnumprocs,ctrank,proclist,totsize,r
      call mpistop()
   endif
 
-  do ii=1,localnumprocs
-     if (proclist(ii).ne.CT_PROCSET(ii,CT_MYLOC(recursiondepth),recursiondepth)) then
-        print *, "recursion error proclist slowindex ",myrank
-        print *, proclist(1:localnumprocs)
-        print *, CT_PROCSET(1:localnumprocs,CT_MYLOC(recursiondepth),recursiondepth)
-        call mpistop()
-     endif
-  enddo
-
-  if (proclist(ctrank).ne.myrank) then
-     print *, "proclist error rank", proclist(ctrank),myrank; call mpistop()
-  endif
 
 
   call gettwiddlesmall(twiddle,localnumprocs,1)
@@ -325,9 +313,9 @@ subroutine myzfft1d_slowindex_mpi(in,out,localnumprocs,ctrank,proclist,totsize,r
   enddo
   select case (ct_paropt)
   case(0)
-  call simple_circ(in,out,fouriermatrix,totsize,ctrank,localnumprocs,proclist,recursiondepth)
+  call simple_circ(in,out,fouriermatrix,totsize,ctrank,localnumprocs,recursiondepth)
   case(1)
-  call simple_summa(in,out,fouriermatrix,totsize,ctrank,localnumprocs,proclist,recursiondepth)
+  call simple_summa(in,out,fouriermatrix,totsize,ctrank,localnumprocs,recursiondepth)
   case default
      write(mpifileptr,*) "ct_paropt not recognized",ct_paropt; call mpistop()
   end select
@@ -337,12 +325,12 @@ end subroutine myzfft1d_slowindex_mpi
 
 
 
-subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,proclist,recursiondepth)
+subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,recursiondepth)
   use ct_fileptrmod
   use ct_mpimod
   use ct_primesetmod
   implicit none
-  integer, intent(in) :: howmany,ctrank,localnumprocs,proclist(localnumprocs),recursiondepth
+  integer, intent(in) :: howmany,ctrank,localnumprocs,recursiondepth
   complex*16, intent(in) :: in(howmany), mat(localnumprocs,localnumprocs)
   complex*16, intent(out) :: out(howmany)
   integer :: thisfileptr
@@ -403,12 +391,12 @@ subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,proclist,recursi
 end subroutine simple_circ
 
 
-subroutine simple_summa(in, out,mat,howmany,ctrank,localnumprocs,proclist,recursiondepth)
+subroutine simple_summa(in, out,mat,howmany,ctrank,localnumprocs,recursiondepth)
   use ct_fileptrmod
   use ct_mpimod
   use ct_primesetmod
   implicit none
-  integer, intent(in) :: howmany,ctrank,localnumprocs,proclist(localnumprocs),recursiondepth
+  integer, intent(in) :: howmany,ctrank,localnumprocs,recursiondepth
   complex*16, intent(in) :: in(howmany), mat(localnumprocs,localnumprocs)
   complex*16, intent(out) :: out(howmany)
   integer :: thisfileptr
