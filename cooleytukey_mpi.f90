@@ -1,6 +1,3 @@
-
-#define MAXPRIMES 7
-
 !!$
 !!$Apache License
 !!$                           Version 2.0, January 2004
@@ -197,25 +194,25 @@
 
 !! INVERSE OF cooleytukey_outofplace_mpi except for division
 
-subroutine cooleytukey_outofplace_backward_mpi(intranspose,out,dim2,dim3,dim1,pf,howmany)
+subroutine cooleytukey_outofplace_backward_mpi(intranspose,out,dim2,dim3,dim1,howmany)
   implicit none
-  integer, intent(in) :: dim2,dim3,dim1,howmany,pf(MAXPRIMES)
+  integer, intent(in) :: dim2,dim3,dim1,howmany
   complex*16, intent(in) :: intranspose(dim2,dim3,dim1,howmany)
   complex*16, intent(out) :: out(dim2,dim3,dim1,howmany)
 
-  call cooleytukey_outofplace_backward_mpi0(intranspose,out,dim2,dim3,dim1,pf,howmany,1)
+  call cooleytukey_outofplace_backward_mpi0(intranspose,out,dim2,dim3,dim1,howmany,1)
 
 end subroutine
 
-subroutine cooleytukey_outofplace_backward_mpi0(intranspose,out,dim2,dim3,dim1,pf,howmany,recursiondepth)
+subroutine cooleytukey_outofplace_backward_mpi0(intranspose,out,dim2,dim3,dim1,howmany,recursiondepth)
   implicit none
-  integer, intent(in) :: dim2,dim3,dim1,howmany,pf(MAXPRIMES),recursiondepth
+  integer, intent(in) :: dim2,dim3,dim1,howmany,recursiondepth
   complex*16, intent(in) :: intranspose(dim2,dim3,dim1,howmany)
   complex*16, intent(out) :: out(dim2,dim3,dim1,howmany)
   complex*16 ::  intransconjg(dim2,dim3,dim1,howmany),  outconjg(dim2,dim3,dim1,howmany)
 
   intransconjg(:,:,:,:)=CONJG(intranspose(:,:,:,:))
-  call cooleytukey_outofplaceinput_mpi0(intransconjg,outconjg,dim2,dim3,dim1,pf,howmany,recursiondepth)
+  call cooleytukey_outofplaceinput_mpi0(intransconjg,outconjg,dim2,dim3,dim1,howmany,recursiondepth)
   out(:,:,:,:)=CONJG(outconjg(:,:,:,:))
 
 end subroutine cooleytukey_outofplace_backward_mpi0
@@ -224,29 +221,29 @@ end subroutine cooleytukey_outofplace_backward_mpi0
 
 !! fourier transform with OUT-OF-PLACE OUTPUT. 
 
-subroutine cooleytukey_outofplace_forward_mpi(in,outtrans,dim2,dim3,dim1,pf,howmany)
+subroutine cooleytukey_outofplace_forward_mpi(in,outtrans,dim2,dim3,dim1,howmany)
   use ct_fileptrmod
   use ct_options
   implicit none
-  integer, intent(in) :: dim2,dim3,dim1,howmany,pf(MAXPRIMES)
+  integer, intent(in) :: dim2,dim3,dim1,howmany
   complex*16, intent(in) :: in(dim2,dim3,dim1,howmany)
   complex*16, intent(out) :: outtrans(dim2,dim3,dim1,howmany)
 
-  call cooleytukey_outofplace_mpi0(in,outtrans,dim2,dim3,dim1,pf,howmany,1)
+  call cooleytukey_outofplace_mpi0(in,outtrans,dim2,dim3,dim1,howmany,1)
 
 end subroutine cooleytukey_outofplace_forward_mpi
 
 
-recursive subroutine cooleytukey_outofplace_mpi0(in,outtrans,dim2,dim3,dim1,pf,howmany,recursiondepth)
+recursive subroutine cooleytukey_outofplace_mpi0(in,outtrans,dim2,dim3,dim1,howmany,recursiondepth)
   use ct_fileptrmod
   use ct_options
   use ct_primesetmod !! ct_numprimes
   implicit none
-  integer, intent(in) :: dim2,dim3,dim1,howmany,pf(MAXPRIMES),recursiondepth
+  integer, intent(in) :: dim2,dim3,dim1,howmany,recursiondepth
   complex*16, intent(in) :: in(dim2,dim3,dim1,howmany)
   complex*16, intent(out) :: outtrans(dim2,dim3,dim1,howmany)
   complex*16 ::  tempout(dim2,dim3,dim1,howmany),  outtemp(dim2,dim3,dim1,howmany)
-  integer ::  newpf(MAXPRIMES),newdepth
+  integer ::  newdepth
 
   call myzfft1d_slowindex_mpi(in,tempout,dim1*dim2*dim3*howmany,recursiondepth)
 
@@ -262,24 +259,23 @@ recursive subroutine cooleytukey_outofplace_mpi0(in,outtrans,dim2,dim3,dim1,pf,h
         write(mpifileptr,*) "NOT SUPPORTED ct_dimensionality",ct_dimensionality; call mpistop()
      end select
   else
-     newpf(1:MAXPRIMES-1)=pf(2:MAXPRIMES); newpf(MAXPRIMES)=1
      newdepth=recursiondepth+1
-     call cooleytukey_outofplace_mpi0(outtemp,outtrans,dim2,dim3,dim1,newpf,howmany,newdepth)
+     call cooleytukey_outofplace_mpi0(outtemp,outtrans,dim2,dim3,dim1,howmany,newdepth)
   endif
 
 end subroutine cooleytukey_outofplace_mpi0
 
 
-recursive subroutine cooleytukey_outofplaceinput_mpi0(intranspose,out,dim2,dim3,dim1,pf,howmany,recursiondepth)
+recursive subroutine cooleytukey_outofplaceinput_mpi0(intranspose,out,dim2,dim3,dim1,howmany,recursiondepth)
   use ct_fileptrmod
   use ct_options
   use ct_primesetmod !! ct_numprimes
   implicit none
-  integer, intent(in) :: dim2,dim3,dim1,howmany,pf(MAXPRIMES),recursiondepth
+  integer, intent(in) :: dim2,dim3,dim1,howmany,recursiondepth
   complex*16, intent(in) :: intranspose(dim2,dim3,dim1,howmany)
   complex*16, intent(out) :: out(dim2,dim3,dim1,howmany)
   complex*16 ::   temptrans(dim2,dim3,dim1,howmany),outtrans(dim2,dim3,dim1,howmany)
-  integer ::  newpf(MAXPRIMES),newdepth
+  integer ::  newdepth
 
   if (recursiondepth.eq.ct_numprimes) then
      select case(ct_dimensionality)
@@ -291,9 +287,8 @@ recursive subroutine cooleytukey_outofplaceinput_mpi0(intranspose,out,dim2,dim3,
         write(mpifileptr,*) "NOT SUPPORTED ct_dimensionality",ct_dimensionality; call mpistop()
      end select
   else
-     newpf(1:MAXPRIMES-1)=pf(2:MAXPRIMES); newpf(MAXPRIMES)=1
      newdepth=recursiondepth+1
-     call cooleytukey_outofplaceinput_mpi0(intranspose,temptrans,dim2,dim3,dim1,newpf,howmany,newdepth)
+     call cooleytukey_outofplaceinput_mpi0(intranspose,temptrans,dim2,dim3,dim1,howmany,newdepth)
   endif
 
   call twiddlemult_mpi(dim2*dim3,temptrans,outtrans,dim1,howmany,recursiondepth)

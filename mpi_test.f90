@@ -34,7 +34,7 @@ subroutine mpi_core(myrank,nprocs,mpifileptr)
        input1(size1,nprocs), & !!TEMP output(size1*nprocs),
        input0(size1*nprocs)  !!,output1(size1,nprocs)
   real*8 :: realarray(size1*nprocs),randomamount
-  integer :: primefactors(128),numfactors,i
+  integer :: i
 
   size=nprocs*size1
   do i=1,size
@@ -51,18 +51,10 @@ subroutine mpi_core(myrank,nprocs,mpifileptr)
 
   write(mpifileptr,*) "Go mpi_test. Dimensions are ",size1,nprocs
 
-!!TEMP    numfactors=1; primefactors(:)=1; primefactors(1)=nprocs
-
-call getallprimefactors(nprocs,128,numfactors,primefactors)
-
-  write(mpifileptr,*) "     Prime factors of ",nprocs," are"
-  write(mpifileptr,*) primefactors(1:numfactors)
-  write(mpifileptr,*)
-
   write(mpifileptr,*) "randomamount is ", randomamount
 
-!!TEMP  write(mpifileptr,*) "## call ft.  "
-!!TEMP  call myzfft1d(input,output,size,1)
+!!$  write(mpifileptr,*) "## call ft.  "
+!!$  call myzfft1d(input,output,size,1)
 
   input1(:,:)=RESHAPE(input,(/size1,nprocs/))
 
@@ -73,13 +65,13 @@ call getallprimefactors(nprocs,128,numfactors,primefactors)
      write(mpifileptr,*) "## call cooleytukey_outofplace_mpi  "
   endif
   call ctdim(1)
-  call cooleytukey_outofplace_forward_mpi(input1(:,myrank),zoutput1(:,myrank),1,1,size1,primefactors,1)
+  call cooleytukey_outofplace_forward_mpi(input1(:,myrank),zoutput1(:,myrank),1,1,size1,1)
 
   call mympigather(zoutput1(:,myrank),zoutput1,size1)
 
   write(mpifileptr,*) "## call cooleytukey_outofplace_backward_mpi"
   call ctdim(1)
-  call cooleytukey_outofplace_backward_mpi(zoutput1(:,myrank),input1(:,myrank),1,1,size1,primefactors,1)
+  call cooleytukey_outofplace_backward_mpi(zoutput1(:,myrank),input1(:,myrank),1,1,size1,1)
   input1(:,myrank)=input1(:,myrank)/size1/nprocs
 
   if (myrank.eq.1) then
