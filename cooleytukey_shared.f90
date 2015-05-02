@@ -193,7 +193,7 @@
 
 module ct_fileptrmod
   implicit none
-  integer :: mpifileptr = 6
+  integer :: mpifileptr = (-798)
 end module ct_fileptrmod
 
 module ct_mpimod
@@ -222,22 +222,24 @@ subroutine ctdim(in_ctdim)
   ct_dimensionality=in_ctdim
 end subroutine ctdim
 
-subroutine ctset(in_ctparopt)
+subroutine ct_init(in_ctparopt,in_mpifileptr)
   use ct_fileptrmod
   use ct_mpimod
   use ct_options
   implicit none
-  integer, intent(in) :: in_ctparopt
+  integer, intent(in) :: in_ctparopt,in_mpifileptr
   ct_paropt=in_ctparopt
   call getmyranknprocs(myrank,nprocs)
   call getworldcommgroup(CT_COMM_WORLD,CT_GROUP_WORLD)
   if (myrank.eq.1) then
      mpifileptr=6
   else
-     mpifileptr=989
+!!$     mpifileptr=in_mpifileptr
+!!$     open(mpifileptr,file="/dev/null", status="unknown")
+     mpifileptr=4910
      open(mpifileptr,file="/dev/null", status="unknown")
   endif
-end subroutine ctset
+end subroutine ct_init
 
 
 subroutine twiddlemult_mpi(blocksize,in,out,dim1,numfactored,myfactor,localnumprocs,ctrank,howmany)
@@ -276,8 +278,6 @@ subroutine myzfft1d_slowindex_mpi(in,out,localnumprocs,ctrank,proclist,totsize)
   complex*16 :: fouriermatrix(localnumprocs,localnumprocs),twiddle(localnumprocs)
   integer :: ii
 
-!!  print *, "in slowindex", proclist
-
   call gettwiddlesmall(twiddle,localnumprocs,1)
   do ii=1,localnumprocs
      fouriermatrix(:,ii)=twiddle(:)**(ii-1)
@@ -291,11 +291,12 @@ subroutine myzfft1d_slowindex_mpi(in,out,localnumprocs,ctrank,proclist,totsize)
      write(mpifileptr,*) "ct_paropt not recognized",ct_paropt; call mpistop()
   end select
 
-!!print *, "done slowindex"
-
 end subroutine myzfft1d_slowindex_mpi
 
 
+!! Nonstandard MPI.  Not all processes construct all communicators; instead they only
+!! construct their own.  Yong says it should be ok... usually... work in progress
+!! (https://github.com/LBNL-AMO-MCTDHF/CooleyTukeyMPI)
 
 
 subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,proclist)
@@ -305,65 +306,65 @@ subroutine simple_circ(in, out,mat,howmany,ctrank,localnumprocs,proclist)
   integer, intent(in) :: howmany,ctrank,localnumprocs,proclist(localnumprocs)
   complex*16, intent(in) :: in(howmany), mat(localnumprocs,localnumprocs)
   complex*16, intent(out) :: out(howmany)
+  integer :: thisfileptr
 #ifndef MPIFLAG
+  thisfileptr=6
   if (ctrank.ne.1) then
-     write(mpifileptr,*) "Error non-mpi rank ne 1", ctrank; call mpistop()
+     write(thisfileptr,*) "Error non-mpi rank ne 1", ctrank; call mpistop()
   endif
   out(:)=in(:)
   return
 #else
   complex*16 :: work2(howmany),work(howmany)
   integer :: ibox,jbox,deltabox,nnn,CT_GROUP_LOCAL,CT_COMM_LOCAL,ierr,procshift(localnumprocs)
+  thisfileptr=6
   ierr=798
   if (localnumprocs.eq.1) then
-     write(mpifileptr,*) "localnumprocs=1 will work, but please edit calling subroutine or "
-     write(mpifileptr,*) "  main input file and do not call cooleytukey with nprocs=1."
+     write(thisfileptr,*) "localnumprocs=1 will work, but please edit calling subroutine or "
+     write(thisfileptr,*) "  main input file and do not call cooleytukey with nprocs=1."
      call mpistop()
   endif
   if (localnumprocs.gt.nprocs.or.localnumprocs.lt.1.or.ctrank.lt.1.or.ctrank.gt.localnumprocs) then
-     write(mpifileptr,*) "local error", ctrank,localnumprocs,nprocs; call mpistop()
+     write(thisfileptr,*) "local error", ctrank,localnumprocs,nprocs; call mpistop()
   endif
 
   procshift(:)=proclist(:)-1
   call mpi_group_incl(CT_GROUP_WORLD,localnumprocs,procshift,CT_GROUP_LOCAL,ierr)
   if (ierr.ne.0) then
-     write(mpifileptr,*) "Error group incl simple_circ",ierr; call mpistop()
+     write(thisfileptr,*) "Error group incl simple_circ",ierr; call mpistop()
   endif
   call mpi_comm_create(CT_COMM_WORLD, CT_GROUP_LOCAL, CT_COMM_LOCAL,ierr)
   if (ierr.ne.0) then
-     write(mpifileptr,*) "Error comm create simple_circ",ierr; call mpistop()
+     write(thisfileptr,*) "Error comm create simple_circ",ierr; call mpistop()
   endif
 
   nnn=1
   out(:)=0
 
   do deltabox=0,localnumprocs-1
-
      ibox=mod(localnumprocs+ctrank-1+deltabox,localnumprocs)+1
      jbox=mod(localnumprocs+ctrank-1-deltabox,localnumprocs)+1
 
      work(:)=in(:)*mat(ibox,ctrank)
 
      if (deltabox.ne.0) then
-        call mympisendrecv(work(:),work2(:),ibox,jbox,deltabox,howmany,CT_COMM_LOCAL)
+        call mympisendrecv_complex_local(work(:),work2(:),ibox,jbox,deltabox,howmany,CT_COMM_LOCAL)
         out(:)=out(:)+work2(:)
      else
         out(:)=out(:)+work(:)
      endif
   enddo
-
   call mpi_comm_free(CT_COMM_LOCAL,ierr)
   if (ierr.ne.0) then
-     write(mpifileptr,*) "Error comm destroy simple_circ",ierr; call mpistop()
+     write(thisfileptr,*) "Error comm destroy simple_circ",ierr; call mpistop()
   endif
   call mpi_group_free(CT_GROUP_LOCAL,ierr)
   if (ierr.ne.0) then
-     write(mpifileptr,*) "Error group destroy simple_circ",ierr; call mpistop()
+     write(thisfileptr,*) "Error group destroy simple_circ",ierr; call mpistop()
   endif
 #endif
 
 end subroutine simple_circ
-
 
 
 subroutine simple_summa(in, out,mat,howmany,ctrank,localnumprocs,proclist)
@@ -373,60 +374,60 @@ subroutine simple_summa(in, out,mat,howmany,ctrank,localnumprocs,proclist)
   integer, intent(in) :: howmany,ctrank,localnumprocs,proclist(localnumprocs)
   complex*16, intent(in) :: in(howmany), mat(localnumprocs,localnumprocs)
   complex*16, intent(out) :: out(howmany)
+  integer :: thisfileptr
 #ifndef MPIFLAG
+  thisfileptr=6
   if (ctrank.ne.1) then
-     write(mpifileptr,*) "Error non-mpi rank ne 1", ctrank; call mpistop()
+     write(thisfileptr,*) "Error non-mpi rank ne 1", ctrank; call mpistop()
   endif
   out(:)=in(:)
   return
 #else
   complex*16 :: work(howmany)
   integer :: ibox,nnn,CT_GROUP_LOCAL,CT_COMM_LOCAL,ierr,procshift(localnumprocs)
+  thisfileptr=6
   ierr=(-798)
   if (localnumprocs.eq.1) then
-     write(mpifileptr,*) "localnumprocs=1 will work, but please edit calling subroutine or "
-     write(mpifileptr,*) "  main program input file; do not call cooleytukey with nprocs=1."
+     write(thisfileptr,*) "localnumprocs=1 will work, but please edit calling subroutine or "
+     write(thisfileptr,*) "  main program input file; do not call cooleytukey with nprocs=1."
      call mpistop()
   endif
   if (localnumprocs.gt.nprocs.or.localnumprocs.lt.1.or.ctrank.lt.1.or.ctrank.gt.localnumprocs) then
-     write(mpifileptr,*) "local error", ctrank,localnumprocs,nprocs; call mpistop()
+     write(thisfileptr,*) "local error", ctrank,localnumprocs,nprocs; call mpistop()
   endif
 
   procshift(:)=proclist(:)-1
 
   call mpi_group_incl(CT_GROUP_WORLD,localnumprocs,procshift,CT_GROUP_LOCAL,ierr)
   if (ierr.ne.0) then
-     write(mpifileptr,*) "Error group incl simple_summa",ierr; call mpistop()
+     write(thisfileptr,*) "Error group incl simple_summa",ierr; call mpistop()
   endif
   call mpi_comm_create(CT_COMM_WORLD, CT_GROUP_LOCAL, CT_COMM_LOCAL,ierr)
   if (ierr.ne.0) then
-     write(mpifileptr,*) "Error comm create simple_summa",ierr; call mpistop()
+     write(thisfileptr,*) "Error comm create simple_summa",ierr; call mpistop()
   endif
 
   nnn=1
-
   out(:)=0d0
+
   do ibox=1,localnumprocs
      if (ctrank.eq.ibox) then
         work(:)=in(:)
      endif
-     call mympibcast(work(:),ibox,howmany,CT_COMM_LOCAL)
+     call mympicomplexbcast_local(work(:),ibox,howmany,CT_COMM_LOCAL)
      out(:)=out(:)+work(:)*mat(ctrank,ibox)
   enddo
-
   call mpi_comm_free(CT_COMM_LOCAL,ierr)
   if (ierr.ne.0) then
-     write(mpifileptr,*) "Error comm destroy simple_summa",ierr; call mpistop()
+     write(thisfileptr,*) "Error comm destroy simple_summa",ierr; call mpistop()
   endif
   call mpi_group_free(CT_GROUP_LOCAL,ierr)
   if (ierr.ne.0) then
-     write(mpifileptr,*) "Error group destroy simple_summa",ierr; call mpistop()
+     write(thisfileptr,*) "Error group destroy simple_summa",ierr; call mpistop()
   endif
 #endif
 
 end subroutine simple_summa
-
-
 
 
 subroutine myzfft1d_slowindex_local(in,out,dim1,dim2,howmany)
@@ -436,19 +437,15 @@ subroutine myzfft1d_slowindex_local(in,out,dim1,dim2,howmany)
   complex*16, intent(out) :: out(dim1,dim2,howmany)
   complex*16 :: intrans(dim2,dim1,howmany),outtrans(dim2,dim1,howmany)
   integer :: ii
-
   do ii=1,howmany
      intrans(:,:,ii)=TRANSPOSE(in(:,:,ii))
   enddo
   call myzfft1d(intrans,outtrans,dim2,dim1*howmany)
-
   do ii=1,howmany
      out(:,:,ii)=TRANSPOSE(outtrans(:,:,ii))
   enddo
-
 end subroutine myzfft1d_slowindex_local
   
-
 
 subroutine getprimefactor(dim,myfactor)
   implicit none
@@ -461,21 +458,21 @@ subroutine getprimefactor(dim,myfactor)
           73, 79, 83, 89, 97,101,103,107,109,113,127 /)  ! no need to go remotely this high
 
   myfactor=dim
-
   do iprime=1,numprimes
      if (mod(dim,primelist(iprime)).eq.0) then
         myfactor=primelist(iprime)
         return
      endif
   enddo
-
 end subroutine getprimefactor
+
 
 subroutine getallprimefactors(dim,numfactors,allfactors)
   implicit none
   integer, intent(in) :: dim
   integer, intent(out) :: allfactors(7),numfactors
   integer :: thisdim,flag
+
   allfactors(:)=1
   numfactors=1
   thisdim=dim
@@ -497,27 +494,6 @@ end subroutine getallprimefactors
   
 
 
-!! haven't done proper version with recursion
-!
-!subroutine cooleytukey_replace(blocksize,intranspose,out,dim1,dim2,howmany)
-!  implicit none
-!  integer, intent(in) :: dim1,dim2,howmany,blocksize
-!  complex*16, intent(in) :: intranspose(blocksize,dim1,dim2,howmany)
-!  complex*16, intent(out) :: out(blocksize,dim1,dim2,howmany)
-!  integer :: ii,jj
-!
-!  do ii=1,howmany
-!     do jj=1,blocksize
-!        out(jj,:,:,ii)=RESHAPE(TRANSPOSE(intranspose(jj,:,:,ii)),(/dim1,dim2/))
-!     enddo
-!  enddo
-!
-!end subroutine cooleytukey_replace
-
-
-
-  
-
 subroutine gettwiddlesmall(twiddlefacs,dim1,dim2)
   implicit none
   integer, intent(in) :: dim1,dim2
@@ -534,3 +510,19 @@ end subroutine gettwiddlesmall
 
 
 
+!! haven't done proper version with recursion
+!
+!subroutine cooleytukey_replace(blocksize,intranspose,out,dim1,dim2,howmany)
+!  implicit none
+!  integer, intent(in) :: dim1,dim2,howmany,blocksize
+!  complex*16, intent(in) :: intranspose(blocksize,dim1,dim2,howmany)
+!  complex*16, intent(out) :: out(blocksize,dim1,dim2,howmany)
+!  integer :: ii,jj
+!
+!  do ii=1,howmany
+!     do jj=1,blocksize
+!        out(jj,:,:,ii)=RESHAPE(TRANSPOSE(intranspose(jj,:,:,ii)),(/dim1,dim2/))
+!     enddo
+!  enddo
+!
+!end subroutine cooleytukey_replace
