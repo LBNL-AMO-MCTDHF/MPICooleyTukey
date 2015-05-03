@@ -1,5 +1,5 @@
 
-nprocs=256
+nprocs=384
 
 ## nprocs=48
 
