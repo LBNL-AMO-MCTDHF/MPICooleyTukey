@@ -1,5 +1,5 @@
 
-#define MAXPRIMES 7
+#define MAXPRIMES 9
 
 !!$
 !!$Apache License
@@ -537,7 +537,7 @@ subroutine ct_construct()
   enddo
   if (proc_check.ne.nprocs) then
      write(mpifileptr,*) "Proc check programmer error ", proc_check,nprocs,&
-          ct_pf(1:7); call mpistop()
+          ct_pf(1:ct_numprimes); call mpistop()
   endif
 
   ct_maxposition(:)=1
