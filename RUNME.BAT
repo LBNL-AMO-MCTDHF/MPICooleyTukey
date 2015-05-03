@@ -1,5 +1,7 @@
 
- nprocs=48
+nprocs=256
+
+## nprocs=48
 
 ## nprocs=9
 
@@ -15,9 +17,10 @@ echo "RUNNING MPI_TEST"
 mpirun $mpiargs -n $nprocs mpi_test > SCRATCH/mpi_test.out
 echo "DONE MPI_TEST"
 
-echo "RUNNING FT_TEST (broken)"
-mpirun -n 1 ./ft_test > SCRATCH/ft_test.out
-echo "DONE FT_TEST"
+## broken
+## echo "RUNNING FT_TEST (broken)"
+## mpirun -n 1 ./ft_test > SCRATCH/ft_test.out
+## echo "DONE FT_TEST"
 
 echo "MAKING README"
 
@@ -25,7 +28,7 @@ rm -f README
 
 cp README.H README
 
-###diff SCRATCH/ft_test.out SCRATCH/mpi_test.out |grep -v "MPI STOP" >> README
+### broken  diff SCRATCH/ft_test.out SCRATCH/mpi_test.out |grep -v "MPI STOP" >> README
 
 echo "ft_test is broken" >> README
 echo "here is top of mpi_test.out" >> README

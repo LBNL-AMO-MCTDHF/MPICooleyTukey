@@ -1,5 +1,5 @@
 
-#define MAXPRIMES 9
+#define MAXPRIMES 10
 
 !!$
 !!$Apache License
