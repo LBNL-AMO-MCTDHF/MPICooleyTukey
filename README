@@ -31,12 +31,11 @@ here is top of mpi_test.out
  
  Go mpi_test. Dimensions are            7          48
  randomamount is   1.000000000000000E-002
-              ## call cooleytukey_outofplace_mpi  Sat May  2 16:21:36 PDT 2015
+              ## call cooleytukey_outofplace_mpi  Sat May  2 19:34:38 PDT 2015
         Making a 1D FFT plan            1           1           1
                    7
  ## call cooleytukey_outofplace_backward_mpi
-     ## done cooleytukey_outofplace_backward_mpi  Sat May  2 16:21:36 PDT 2015
- ## ok
+     ## done cooleytukey_outofplace_backward_mpi   ## ok
  
           input     input
  
@@ -171,3 +170,4 @@ here is top of mpi_test.out
  
                   44   0.01465   0.01465
                   44   0.00586   0.00586
+ 
