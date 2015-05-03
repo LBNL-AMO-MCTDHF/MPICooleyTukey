@@ -519,8 +519,6 @@ subroutine ct_getprimeset()
 end subroutine ct_getprimeset
 
 
-
-
 subroutine ct_construct()
   use ct_fileptrmod
   use ct_mpimod
@@ -529,11 +527,7 @@ subroutine ct_construct()
 #ifdef MPIFLAG
   integer :: thisfileptr,procshift(nprocs),ierr,iprime,&
        allprocs0(nprocs), proc_check, ii, icomm, &
-!!$   qqtop(7),    allprocs(ct_pf(7),ct_pf(6),ct_pf(5),ct_pf(4),ct_pf(3),ct_pf(2),ct_pf(1)),&
        xxtop(1:ct_numprimes),yytop(1:ct_numprimes),xx,yy
-!!$  integer, target :: qq(7),pp0(7),pp1(7)
-
-!!$  proc_check=ct_pf(1)*ct_pf(2)*ct_pf(3)*ct_pf(4)*ct_pf(5)*ct_pf(6)*ct_pf(7)
 
   proc_check=1; xxtop(:)=1; yytop(:)=1
   do ii=1,ct_numprimes
@@ -556,11 +550,6 @@ subroutine ct_construct()
      allprocs0(ii)=ii
   enddo
 
-!!  allprocs(:,:,:,:,:,:,:)=RESHAPE(allprocs0,(/ct_pf(7),ct_pf(6),ct_pf(5),ct_pf(4),ct_pf(3),ct_pf(2),ct_pf(1)/))
-
-!!  qq1=>qq(1); qq2=>qq(2); qq3=>qq(3); qq4=>qq(4); qq5=>qq(5); 
-!!  qq6=>qq(6); qq7=>qq(7); 
-
   thisfileptr=6
 
   CT_MYLOC = (-99)
@@ -573,37 +562,20 @@ subroutine ct_construct()
 
   do iprime=1,ct_numprimes
 
-!     qqtop(:)=1
-!     qqtop(1:ct_numprimes)=ct_pf(1:ct_numprimes)
-!     qqtop(iprime)=1
-
      icomm=0
 
-!     do qq7=1,qqtop(7)
-!     do qq6=1,qqtop(6)
-!     do qq5=1,qqtop(5)
-!     do qq4=1,qqtop(4)
-!     do qq3=1,qqtop(3)
-!     do qq2=1,qqtop(2)
-!     do qq1=1,qqtop(1)
-
-!        pp0(1:7)=qq(1:7)
-!        pp1(1:7)=qq(1:7)
-!        pp0(iprime)=1
-!        pp1(iprime)=ct_pf(iprime)
-
-     do xx=1, xxtop(iprime)
-     do yy=1, yytop(iprime)
+     do xx=1, xxtop(iprime)    !!  EITHER LOOP ORDER APPEARS OK
+     do yy=1, yytop(iprime)    !!  CHECKME (with qqtop etc was fast index outer, slow inner)
 
         icomm=icomm+1
         if (icomm.gt.nprocs/ct_minprime) then
            write(mpifileptr,*) "Error construct",icomm,nprocs,ct_minprime; call mpistop()
         endif
 
-!        CT_PROCSET(1:ct_pf(iprime),icomm,iprime)=RESHAPE( &
-!             allprocs(pp0(7):pp1(7), pp0(6):pp1(6), pp0(5):pp1(5), pp0(4):pp1(4), &
-!             pp0(3):pp1(3), pp0(2):pp1(2), pp0(1):pp1(1)),(/ct_pf(iprime)/))
-!
+!!$        CT_PROCSET(1:ct_pf(iprime),icomm,iprime)=RESHAPE( &
+!!$             allprocs(pp0(7):pp1(7), pp0(6):pp1(6), pp0(5):pp1(5), pp0(4):pp1(4), &
+!!$             pp0(3):pp1(3), pp0(2):pp1(2), pp0(1):pp1(1)),(/ct_pf(iprime)/))
+!!$
         call ct_cast_assign(allprocs0,yytop(iprime),ct_pf(iprime),xxtop(iprime),yy,xx,&
              CT_PROCSET(1:ct_pf(iprime),icomm,iprime))
 
@@ -640,12 +612,6 @@ subroutine ct_construct()
 
      enddo
      enddo
-!     enddo
-!     enddo
-!     enddo
-!     enddo
-!     enddo
-
      if (CT_MYLOC(iprime).le.0) then
         print *, "MYLOC ERROR",myrank,CT_MYLOC(iprime),iprime; call mpistop()
      endif
